@@ -10,6 +10,8 @@ import {
   sfxWhoosh,
 } from '../lib/sound'
 import * as gl from '../lib/genlayer'
+import * as oauth from '../lib/oauth'
+import type { SocialProfile } from '../lib/oauth'
 
 // Fire-and-forget on-chain mirror. Multi-market design: every bet/resolve
 // hits the deployed contract for its market_id. Skipped only when the
@@ -43,6 +45,9 @@ type State = {
   soundMuted: boolean
   discordConnected: boolean
   xConnected: boolean
+  // Real-OAuth profiles. Stay null in demo mode (env client_id missing).
+  discordProfile: SocialProfile | null
+  xProfile: SocialProfile | null
   connecting: boolean
 
   seeding: boolean
@@ -60,8 +65,8 @@ type State = {
   dismissToast: (id: number) => void
   teleport: (view: View) => void
   toggleSound: () => void
-  toggleDiscord: () => void
-  toggleX: () => void
+  toggleDiscord: () => Promise<void>
+  toggleX: () => Promise<void>
 }
 
 let toastCounter = 0
@@ -81,6 +86,8 @@ export const useMarketStore = create<State>()(
       soundMuted: false,
       discordConnected: false,
       xConnected: false,
+      discordProfile: null,
+      xProfile: null,
       connecting: false,
       seeding: false,
 
@@ -109,6 +116,27 @@ export const useMarketStore = create<State>()(
           })
           sfxThunk(get().soundMuted)
           get().pushToast('success', `Connected ${addr.slice(0, 6)}…${addr.slice(-4)}`)
+
+          // Mandatory on-chain init: every bet hits the contract per
+          // market_id, so the contract must already know the markets.
+          // Probe list_markets() — if empty, seed; if already populated,
+          // skip silently. Probe failures (contract missing, network)
+          // surface as a toast but don't block UI.
+          if (gl.isEnabled()) {
+            try {
+              const listing = await gl.listMarkets()
+              const seeded = (listing.market_ids ?? []).length > 0
+              if (!seeded) {
+                await get().seedOnChain()
+              }
+            } catch (err) {
+              const msg = err instanceof Error ? err.message : String(err)
+              get().pushToast(
+                'error',
+                `On-chain init check failed: ${msg.slice(0, 80)}`,
+              )
+            }
+          }
         } catch (err) {
           const msg = err instanceof Error ? err.message : String(err)
           get().pushToast('error', `Connect failed: ${msg.slice(0, 100)}`)
@@ -303,22 +331,47 @@ export const useMarketStore = create<State>()(
 
       toggleSound: () => set((s) => ({ soundMuted: !s.soundMuted })),
 
-      toggleDiscord: () => {
-        const next = !get().discordConnected
-        set({ discordConnected: next })
-        get().pushToast(
-          next ? 'success' : 'info',
-          next ? 'Discord linked (demo)' : 'Discord unlinked',
-        )
+      toggleDiscord: async () => {
+        if (get().discordConnected) {
+          set({ discordConnected: false, discordProfile: null })
+          get().pushToast('info', 'Discord unlinked')
+          return
+        }
+        if (!oauth.isDiscordEnabled()) {
+          // Demo fallback — env client_id not set, just flip the flag.
+          set({ discordConnected: true, discordProfile: null })
+          get().pushToast('success', 'Discord linked (demo)')
+          return
+        }
+        try {
+          const profile = await oauth.connectDiscord()
+          set({ discordConnected: true, discordProfile: profile })
+          get().pushToast('success', `Discord linked: ${profile.username}`)
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : String(err)
+          get().pushToast('error', `Discord: ${msg.slice(0, 100)}`)
+        }
       },
 
-      toggleX: () => {
-        const next = !get().xConnected
-        set({ xConnected: next })
-        get().pushToast(
-          next ? 'success' : 'info',
-          next ? 'X linked (demo)' : 'X unlinked',
-        )
+      toggleX: async () => {
+        if (get().xConnected) {
+          set({ xConnected: false, xProfile: null })
+          get().pushToast('info', 'X unlinked')
+          return
+        }
+        if (!oauth.isXEnabled()) {
+          set({ xConnected: true, xProfile: null })
+          get().pushToast('success', 'X linked (demo)')
+          return
+        }
+        try {
+          const profile = await oauth.connectX()
+          set({ xConnected: true, xProfile: profile })
+          get().pushToast('success', `X linked: @${profile.username}`)
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : String(err)
+          get().pushToast('error', `X: ${msg.slice(0, 100)}`)
+        }
       },
     }),
     {
@@ -336,6 +389,8 @@ export const useMarketStore = create<State>()(
         soundMuted: state.soundMuted,
         discordConnected: state.discordConnected,
         xConnected: state.xConnected,
+        discordProfile: state.discordProfile,
+        xProfile: state.xProfile,
       }),
     },
   ),

@@ -20,6 +20,8 @@ export function ProfilePanel() {
   const claimFaucet = useMarketStore((s) => s.claimFaucet)
   const seedOnChain = useMarketStore((s) => s.seedOnChain)
   const seeding = useMarketStore((s) => s.seeding)
+  const discordProfile = useMarketStore((s) => s.discordProfile)
+  const xProfile = useMarketStore((s) => s.xProfile)
 
   const joinedBets = useMemo(() => {
     const byId = new Map(markets.map((m) => [m.id, m]))
@@ -119,13 +121,23 @@ export function ProfilePanel() {
           )}
           aria-pressed={discordConnected}
         >
-          <span className="flex items-center gap-2">
-            <span className="text-base" aria-hidden="true">
-              ✦
+          <span className="flex items-center gap-2 min-w-0">
+            {discordProfile?.avatarUrl ? (
+              <img
+                src={discordProfile.avatarUrl}
+                alt=""
+                className="w-5 h-5 rounded-full"
+              />
+            ) : (
+              <span className="text-base" aria-hidden="true">
+                ✦
+              </span>
+            )}
+            <span className="truncate">
+              {discordProfile ? discordProfile.username : 'Discord'}
             </span>
-            Discord
           </span>
-          <span className="text-xs font-mono">
+          <span className="text-xs font-mono whitespace-nowrap">
             {discordConnected ? '✓ linked' : '+ connect'}
           </span>
         </button>
@@ -140,13 +152,23 @@ export function ProfilePanel() {
           )}
           aria-pressed={xConnected}
         >
-          <span className="flex items-center gap-2">
-            <span className="text-base font-bold" aria-hidden="true">
-              𝕏
+          <span className="flex items-center gap-2 min-w-0">
+            {xProfile?.avatarUrl ? (
+              <img
+                src={xProfile.avatarUrl}
+                alt=""
+                className="w-5 h-5 rounded-full"
+              />
+            ) : (
+              <span className="text-base font-bold" aria-hidden="true">
+                𝕏
+              </span>
+            )}
+            <span className="truncate">
+              {xProfile ? `@${xProfile.username}` : 'X.com'}
             </span>
-            X.com
           </span>
-          <span className="text-xs font-mono">
+          <span className="text-xs font-mono whitespace-nowrap">
             {xConnected ? '✓ linked' : '+ connect'}
           </span>
         </button>
