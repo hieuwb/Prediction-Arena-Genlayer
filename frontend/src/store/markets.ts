@@ -427,21 +427,24 @@ export const useMarketStore = create<State>()(
         try {
           const data = await gl.getMarket(marketId)
           if (!data) return
+          // Sync ONLY the resolution state, not the pools. Mock initial
+          // pools ([180,70,110] etc.) are house liquidity that makes
+          // parimutuel multipliers meaningful from the first bet —
+          // overwriting them with the contract's true [0+yourBet,0,0]
+          // collapses every multiplier to 1.00× until lots of bets
+          // distribute. The PARENA economy is frontend-side anyway;
+          // on-chain bets are real txs that prove activity, but the
+          // payout math runs against local pool state.
+          if (!data.has_resolved) return
           set((s) => ({
             markets: s.markets.map((m) =>
               m.id !== marketId
                 ? m
                 : {
                     ...m,
-                    optionPools: data.option_pools.map((n) => Number(n)),
-                    totalPool: Number(data.total_pool),
-                    ...(data.has_resolved
-                      ? {
-                          state: 'resolved' as const,
-                          winningOption: Number(data.winner),
-                          reasoning: data.reasoning || undefined,
-                        }
-                      : {}),
+                    state: 'resolved' as const,
+                    winningOption: Number(data.winner),
+                    reasoning: data.reasoning || undefined,
                   },
             ),
           }))
