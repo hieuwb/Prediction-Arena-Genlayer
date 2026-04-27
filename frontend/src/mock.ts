@@ -1,5 +1,13 @@
 import type { Market } from './types'
 
+// Staggered close offsets — each market gets `closesAt = bootTime + offset`
+// so the demo cycles through resolutions without all 9 firing at once.
+// Short offsets up front so reviewers see the auto-resolve flow within
+// 1-2 minutes of opening the app.
+const MIN = 60_000
+const BOOT = Date.now()
+const closeIn = (ms: number) => BOOT + ms
+
 export const initialMarkets: Market[] = [
   // ─── Football ──────────────────────────────────────────────
   {
@@ -13,6 +21,7 @@ export const initialMarkets: Market[] = [
     winningOption: null,
     category: 'football',
     mockWinner: 0,
+    closesAt: closeIn(2 * MIN),
     meta: {
       kind: 'football',
       teams: ['Brazil', 'Jamaica'],
@@ -31,6 +40,7 @@ export const initialMarkets: Market[] = [
     winningOption: null,
     category: 'football',
     mockWinner: 2,
+    closesAt: closeIn(8 * MIN),
     meta: {
       kind: 'football',
       teams: ['Real Madrid', 'Barcelona'],
@@ -49,6 +59,7 @@ export const initialMarkets: Market[] = [
     winningOption: null,
     category: 'football',
     mockWinner: 0,
+    closesAt: closeIn(15 * MIN),
     meta: {
       kind: 'football',
       teams: ['Liverpool', 'Man City'],
@@ -69,6 +80,7 @@ export const initialMarkets: Market[] = [
     winningOption: null,
     category: 'crypto',
     mockWinner: 1,
+    closesAt: closeIn(4 * MIN),
     meta: {
       kind: 'crypto',
       symbol: '₿',
@@ -88,6 +100,7 @@ export const initialMarkets: Market[] = [
     winningOption: null,
     category: 'crypto',
     mockWinner: 0,
+    closesAt: closeIn(20 * MIN),
     meta: {
       kind: 'crypto',
       symbol: 'Ξ',
@@ -107,6 +120,7 @@ export const initialMarkets: Market[] = [
     winningOption: null,
     category: 'crypto',
     mockWinner: 1,
+    closesAt: closeIn(60 * MIN),
     meta: {
       kind: 'crypto',
       symbol: '◎',
@@ -128,6 +142,7 @@ export const initialMarkets: Market[] = [
     winningOption: null,
     category: 'news',
     mockWinner: 0,
+    closesAt: closeIn(6 * MIN),
     meta: {
       kind: 'news',
       flag: 'USA',
@@ -146,6 +161,7 @@ export const initialMarkets: Market[] = [
     winningOption: null,
     category: 'news',
     mockWinner: 0,
+    closesAt: closeIn(12 * MIN),
     meta: {
       kind: 'news',
       flag: 'EU',
@@ -164,6 +180,7 @@ export const initialMarkets: Market[] = [
     winningOption: null,
     category: 'news',
     mockWinner: 1,
+    closesAt: closeIn(30 * MIN),
     meta: {
       kind: 'news',
       flag: 'USA',

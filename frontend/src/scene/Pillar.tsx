@@ -5,6 +5,7 @@ import * as THREE from 'three'
 import type { Market } from '../types'
 import { useMarketStore } from '../store/markets'
 import { MarketScreen } from './MarketScreen'
+import { useCountdown, formatCountdown } from '../lib/countdown'
 
 // Sci-fi pillar: hex base + tall hex shaft with glowing edge bars +
 // floating energy core (sphere + orbiting torus).
@@ -51,6 +52,8 @@ export function Pillar({ market, position = [0, 0, 0], tintOpen }: Props) {
   const pulseTRef = useRef(0)
 
   const select = useMarketStore((s) => s.select)
+  const remaining = useCountdown(market.closesAt)
+  const countdownLabel = formatCountdown(remaining)
 
   const targetHeight = heightFromPool(market.totalPool)
   const baseColor =
@@ -305,7 +308,7 @@ export function Pillar({ market, position = [0, 0, 0], tintOpen }: Props) {
             ? `→ ${market.options[market.winningOption]}`
             : market.state === 'pending'
               ? 'resolving…'
-              : 'open'}
+              : `closes in ${countdownLabel}`}
         </Text>
       </Billboard>
     </group>

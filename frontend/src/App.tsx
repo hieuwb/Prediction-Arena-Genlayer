@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Scene } from './scene/Scene'
 import { WalletButton } from './ui/WalletButton'
 import { MarketList } from './ui/MarketList'
@@ -17,8 +17,17 @@ export default function App() {
     (s) => s.markets.filter((m) => m.state === 'open').length,
   )
   const view = useMarketStore((s) => s.currentView)
+  const tickExpiredMarkets = useMarketStore((s) => s.tickExpiredMarkets)
   const mobile = useIsMobile()
   const [drawerOpen, setDrawerOpen] = useState(false)
+
+  // Tick once a second — sweep markets whose closesAt has passed and
+  // auto-trigger resolveMarket. resolveMarket flips state to 'pending'
+  // immediately so each expired market only fires once.
+  useEffect(() => {
+    const id = window.setInterval(tickExpiredMarkets, 1000)
+    return () => window.clearInterval(id)
+  }, [tickExpiredMarkets])
 
   return (
     <div className="relative w-screen h-screen overflow-hidden">

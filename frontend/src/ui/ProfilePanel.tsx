@@ -4,24 +4,18 @@ import { useMarketStore } from '../store/markets'
 import type { Bet, Market } from '../types'
 
 // Profile panel — replaces MarketList in the sidebar slot when the user
-// is in the profile zone. Shows identity, social connect, stats summary,
+// is in the profile zone. Shows identity, on-chain admin, stats summary,
 // and a scrollable bet history.
 export function ProfilePanel() {
   const userAddress = useMarketStore((s) => s.userAddress)
   const parenaBalance = useMarketStore((s) => s.parenaBalance)
   const userBets = useMarketStore((s) => s.userBets)
   const markets = useMarketStore((s) => s.markets)
-  const discordConnected = useMarketStore((s) => s.discordConnected)
-  const xConnected = useMarketStore((s) => s.xConnected)
-  const toggleDiscord = useMarketStore((s) => s.toggleDiscord)
-  const toggleX = useMarketStore((s) => s.toggleX)
   const teleport = useMarketStore((s) => s.teleport)
   const select = useMarketStore((s) => s.select)
   const claimFaucet = useMarketStore((s) => s.claimFaucet)
   const seedOnChain = useMarketStore((s) => s.seedOnChain)
   const seeding = useMarketStore((s) => s.seeding)
-  const discordProfile = useMarketStore((s) => s.discordProfile)
-  const xProfile = useMarketStore((s) => s.xProfile)
 
   const joinedBets = useMemo(() => {
     const byId = new Map(markets.map((m) => [m.id, m]))
@@ -105,74 +99,6 @@ export function ProfilePanel() {
         </div>
       )}
 
-      {/* Social */}
-      <div className="space-y-1.5 mb-3">
-        <div className="text-[10px] uppercase tracking-widest text-white/55 mb-1 px-1">
-          Social
-        </div>
-        <button
-          type="button"
-          onClick={toggleDiscord}
-          className={clsx(
-            'w-full flex items-center justify-between px-3 py-2 rounded-lg border text-sm font-medium transition focus:outline-none focus-visible:ring-2',
-            discordConnected
-              ? 'bg-indigo-500/15 border-indigo-500/60 text-indigo-300 focus-visible:ring-indigo-500/60'
-              : 'bg-white/5 border-white/10 text-white/75 hover:border-white/35 focus-visible:ring-white/40',
-          )}
-          aria-pressed={discordConnected}
-        >
-          <span className="flex items-center gap-2 min-w-0">
-            {discordProfile?.avatarUrl ? (
-              <img
-                src={discordProfile.avatarUrl}
-                alt=""
-                className="w-5 h-5 rounded-full"
-              />
-            ) : (
-              <span className="text-base" aria-hidden="true">
-                ✦
-              </span>
-            )}
-            <span className="truncate">
-              {discordProfile ? discordProfile.username : 'Discord'}
-            </span>
-          </span>
-          <span className="text-xs font-mono whitespace-nowrap">
-            {discordConnected ? '✓ linked' : '+ connect'}
-          </span>
-        </button>
-        <button
-          type="button"
-          onClick={toggleX}
-          className={clsx(
-            'w-full flex items-center justify-between px-3 py-2 rounded-lg border text-sm font-medium transition focus:outline-none focus-visible:ring-2',
-            xConnected
-              ? 'bg-arena-cyan/15 border-arena-cyan/60 text-arena-cyan focus-visible:ring-arena-cyan/60'
-              : 'bg-white/5 border-white/10 text-white/75 hover:border-white/35 focus-visible:ring-white/40',
-          )}
-          aria-pressed={xConnected}
-        >
-          <span className="flex items-center gap-2 min-w-0">
-            {xProfile?.avatarUrl ? (
-              <img
-                src={xProfile.avatarUrl}
-                alt=""
-                className="w-5 h-5 rounded-full"
-              />
-            ) : (
-              <span className="text-base font-bold" aria-hidden="true">
-                𝕏
-              </span>
-            )}
-            <span className="truncate">
-              {xProfile ? `@${xProfile.username}` : 'X.com'}
-            </span>
-          </span>
-          <span className="text-xs font-mono whitespace-nowrap">
-            {xConnected ? '✓ linked' : '+ connect'}
-          </span>
-        </button>
-      </div>
 
       {/* Stats */}
       <div className="text-[10px] uppercase tracking-widest text-white/55 mb-1 px-1">

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import clsx from 'clsx'
 import { useMarketStore } from '../store/markets'
 import type { Market } from '../types'
+import { useCountdown, formatCountdown } from '../lib/countdown'
 
 // Outer shell only handles "is a market selected" + escape/click-outside.
 // All per-market state (selected option, stake, pending) lives in
@@ -110,6 +111,7 @@ function BetModalInner({
       >
         {market.question}
       </h2>
+      <ModalCountdown market={market} />
       <a
         href={market.resolutionUrl}
         target="_blank"
@@ -271,4 +273,41 @@ function tryHostname(url: string): string {
   } catch {
     return url
   }
+}
+
+function ModalCountdown({ market }: { market: Market }) {
+  const remaining = useCountdown(market.closesAt)
+  if (market.state === 'resolved') {
+    return (
+      <div className="flex items-center gap-2 text-[11px] font-mono text-arena-gold mb-3">
+        <span className="w-1.5 h-1.5 rounded-full bg-arena-gold" />
+        Resolved
+      </div>
+    )
+  }
+  if (market.state === 'pending') {
+    return (
+      <div className="flex items-center gap-2 text-[11px] font-mono text-white/70 mb-3">
+        <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+        Validators reading the web…
+      </div>
+    )
+  }
+  const urgent = remaining > 0 && remaining < 60_000
+  return (
+    <div
+      className={clsx(
+        'flex items-center gap-2 text-[11px] font-mono mb-3',
+        urgent ? 'text-arena-rose' : 'text-white/55',
+      )}
+    >
+      <span
+        className={clsx(
+          'w-1.5 h-1.5 rounded-full',
+          urgent ? 'bg-arena-rose animate-pulse' : 'bg-white/40',
+        )}
+      />
+      Closes in {remaining > 0 ? formatCountdown(remaining) : '0:00'}
+    </div>
+  )
 }

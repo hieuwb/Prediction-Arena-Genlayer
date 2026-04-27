@@ -50,6 +50,8 @@ export type Market = {
   category: MarketCategory
   // demo-only: which option the mock resolver should pick
   mockWinner: number
+  /** Unix ms — when betting closes and the market auto-resolves */
+  closesAt: number
   /** Display metadata used to render the logo screen above the pillar */
   meta?: MarketMeta
 }

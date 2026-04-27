@@ -2,6 +2,28 @@ import { useEffect, useState } from 'react'
 import clsx from 'clsx'
 import { useMarketStore } from '../store/markets'
 import type { Market, MarketCategory, View } from '../types'
+import { useCountdown, formatCountdown } from '../lib/countdown'
+
+function CountdownPill({ closesAt }: { closesAt: number }) {
+  const remaining = useCountdown(closesAt)
+  const urgent = remaining > 0 && remaining < 60_000
+  return (
+    <div
+      className={clsx(
+        'flex items-center gap-1.5 text-[11px] font-mono',
+        urgent ? 'text-arena-rose' : 'text-white/55',
+      )}
+    >
+      <span
+        className={clsx(
+          'w-1.5 h-1.5 rounded-full',
+          urgent ? 'bg-arena-rose animate-pulse' : 'bg-white/40',
+        )}
+      />
+      {remaining > 0 ? formatCountdown(remaining) : 'closing…'}
+    </div>
+  )
+}
 
 const STATE_BADGE: Record<Market['state'], { label: string; cls: string }> = {
   open: {
@@ -146,6 +168,9 @@ export function MarketList() {
                       <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
                       validators…
                     </div>
+                  )}
+                  {m.state === 'open' && (
+                    <CountdownPill closesAt={m.closesAt} />
                   )}
                 </div>
               </button>

@@ -10,8 +10,6 @@ import {
   sfxWhoosh,
 } from '../lib/sound'
 import * as gl from '../lib/genlayer'
-import * as oauth from '../lib/oauth'
-import type { SocialProfile } from '../lib/oauth'
 
 // Fire-and-forget on-chain mirror. Multi-market design: every bet/resolve
 // hits the deployed contract for its market_id. Skipped only when the
@@ -43,13 +41,7 @@ type State = {
   toasts: Toast[]
   currentView: View
   soundMuted: boolean
-  discordConnected: boolean
-  xConnected: boolean
-  // Real-OAuth profiles. Stay null in demo mode (env client_id missing).
-  discordProfile: SocialProfile | null
-  xProfile: SocialProfile | null
   connecting: boolean
-
   seeding: boolean
 
   // selectors / mutators
@@ -58,6 +50,7 @@ type State = {
   disconnect: () => void
   claimFaucet: () => void
   seedOnChain: () => Promise<void>
+  tickExpiredMarkets: () => void
   placeBet: (marketId: string, optionIdx: number, amount: number) => Promise<void>
   resolveMarket: (marketId: string) => Promise<void>
   claim: (marketId: string) => Promise<void>
@@ -65,8 +58,6 @@ type State = {
   dismissToast: (id: number) => void
   teleport: (view: View) => void
   toggleSound: () => void
-  toggleDiscord: () => Promise<void>
-  toggleX: () => Promise<void>
 }
 
 let toastCounter = 0
@@ -84,10 +75,6 @@ export const useMarketStore = create<State>()(
       toasts: [],
       currentView: 'hub',
       soundMuted: false,
-      discordConnected: false,
-      xConnected: false,
-      discordProfile: null,
-      xProfile: null,
       connecting: false,
       seeding: false,
 
@@ -331,52 +318,22 @@ export const useMarketStore = create<State>()(
 
       toggleSound: () => set((s) => ({ soundMuted: !s.soundMuted })),
 
-      toggleDiscord: async () => {
-        if (get().discordConnected) {
-          set({ discordConnected: false, discordProfile: null })
-          get().pushToast('info', 'Discord unlinked')
-          return
-        }
-        if (!oauth.isDiscordEnabled()) {
-          // Demo fallback — env client_id not set, just flip the flag.
-          set({ discordConnected: true, discordProfile: null })
-          get().pushToast('success', 'Discord linked (demo)')
-          return
-        }
-        try {
-          const profile = await oauth.connectDiscord()
-          set({ discordConnected: true, discordProfile: profile })
-          get().pushToast('success', `Discord linked: ${profile.username}`)
-        } catch (err) {
-          const msg = err instanceof Error ? err.message : String(err)
-          get().pushToast('error', `Discord: ${msg.slice(0, 100)}`)
-        }
-      },
-
-      toggleX: async () => {
-        if (get().xConnected) {
-          set({ xConnected: false, xProfile: null })
-          get().pushToast('info', 'X unlinked')
-          return
-        }
-        if (!oauth.isXEnabled()) {
-          set({ xConnected: true, xProfile: null })
-          get().pushToast('success', 'X linked (demo)')
-          return
-        }
-        try {
-          const profile = await oauth.connectX()
-          set({ xConnected: true, xProfile: profile })
-          get().pushToast('success', `X linked: @${profile.username}`)
-        } catch (err) {
-          const msg = err instanceof Error ? err.message : String(err)
-          get().pushToast('error', `X: ${msg.slice(0, 100)}`)
+      tickExpiredMarkets: () => {
+        const now = Date.now()
+        const expired = get().markets.filter(
+          (m) => m.state === 'open' && m.closesAt <= now,
+        )
+        for (const m of expired) {
+          // Fire-and-forget — resolveMarket flips state to 'pending'
+          // immediately so this same market won't be picked up again
+          // on the next tick.
+          void get().resolveMarket(m.id)
         }
       },
     }),
     {
       name: 'arena-store',
-      version: 2,
+      version: 3,
       // Persist user-owned state + scene state. Skip transient bits
       // (toasts, selected modal) so reload doesn't restore a half-open
       // bet flow.
@@ -387,10 +344,6 @@ export const useMarketStore = create<State>()(
         userBets: state.userBets,
         currentView: state.currentView,
         soundMuted: state.soundMuted,
-        discordConnected: state.discordConnected,
-        xConnected: state.xConnected,
-        discordProfile: state.discordProfile,
-        xProfile: state.xProfile,
       }),
     },
   ),
