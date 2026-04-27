@@ -100,6 +100,43 @@ export function ProfilePanel() {
         </div>
       )}
 
+      {/* When does the wallet pop up? */}
+      {userAddress && (
+        <div className="rounded-lg bg-white/[0.03] border border-white/10 p-3 mb-3">
+          <div className="text-[10px] uppercase tracking-widest text-arena-cyan mb-2 flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-arena-cyan animate-pulse" />
+            When you sign on-chain
+          </div>
+          <ul className="space-y-1.5 text-[11px] text-white/65 leading-snug">
+            <SignRow label="Initialize markets">
+              <Code>seed_markets(specs_json)</Code> — value <Code>0</Code>,
+              gas only. One-time after a fresh contract deploy.
+            </SignRow>
+            <SignRow label="Faucet PARENA">
+              Plain transfer of <Code>1 GEN</Code> to a burn address.
+              Mints <span className="text-arena-gold">+1000 PARENA</span>{' '}
+              locally.
+            </SignRow>
+            <SignRow label="Place bet">
+              <Code>place_bet(market_id, option_idx)</Code> with{' '}
+              <Code>value=stake</Code>. Pool grows by <Code>stake</Code>{' '}
+              wei on chain.
+            </SignRow>
+            <SignRow label="Auto-resolve">
+              <Code>resolve(market_id)</Code> — value <Code>0</Code>,
+              fired when the resolve clock hits. Validators read the URL
+              + run the LLM, then{' '}
+              <Code>eq_principle_strict_eq</Code> commits the winner.
+            </SignRow>
+          </ul>
+          <p className="text-[10px] text-white/40 mt-2 leading-snug">
+            Tip: each tx pays ~tiny gas in GEN. If a popup is blocked,
+            check the wallet extension or switch to chain{' '}
+            <Code>61999</Code>.
+          </p>
+        </div>
+      )}
+
 
       {/* Stats */}
       <div className="text-[10px] uppercase tracking-widest text-white/55 mb-1 px-1">
@@ -188,5 +225,31 @@ function Stat({
       </div>
       <div className={clsx('text-lg font-mono font-bold', accent)}>{value}</div>
     </div>
+  )
+}
+
+function SignRow({
+  label,
+  children,
+}: {
+  label: string
+  children: React.ReactNode
+}) {
+  return (
+    <li className="flex gap-2">
+      <span className="text-arena-cyan font-bold shrink-0 mt-0.5">›</span>
+      <div>
+        <span className="text-white/90 font-semibold">{label}: </span>
+        <span className="text-white/60">{children}</span>
+      </div>
+    </li>
+  )
+}
+
+function Code({ children }: { children: React.ReactNode }) {
+  return (
+    <code className="font-mono text-[10.5px] text-arena-cyan/90 bg-arena-cyan/10 px-1 py-px rounded">
+      {children}
+    </code>
   )
 }
