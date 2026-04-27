@@ -2,7 +2,7 @@
 
 > A 3D prediction-market dApp on **GenLayer**. AI validators fetch live web data and reach consensus on outcomes — no admin resolve, no Chainlink oracle.
 
-5-day hackathon project. Full design + scope + roadmap in [plan.md](./plan.md).
+5-day hackathon project.
 
 ## Live demo
 
@@ -18,8 +18,7 @@
 
 | Layer | Status | Path |
 |---|---|---|
-| Smart contract (multi-market) | ready to deploy on Studio | [contracts/PredictionArena.py](./contracts/PredictionArena.py) |
-| Deploy + seed guide | step-by-step | [contracts/DEPLOY.md](./contracts/DEPLOY.md) |
+| Smart contract (multi-market) | deployed on Studio | [contracts/PredictionArena.py](./contracts/PredictionArena.py) |
 | 3D frontend | full hub + 4 zones, MetaMask/Rabby, PARENA faucet, mobile responsive, loading screen | [frontend/](./frontend/) |
 | Wallet + on-chain mirror | genlayer-js + window.ethereum, every bet mirrors per market_id | [frontend/src/lib/genlayer.ts](./frontend/src/lib/genlayer.ts) |
 
@@ -77,19 +76,14 @@ The frontend runs in **mock-only mode** automatically when `VITE_CONTRACT_ADDRES
 
 ```
 .
-├── plan.md                    # source of truth — read this first
 ├── contracts/
-│   ├── PredictionArena.py     # Intelligent Contract (Python)
-│   ├── DEPLOY.md              # step-by-step Studio deploy
-│   ├── seed.md                # 9 demo create_market calls
-│   └── README.md              # API surface, resolve flow, notes
-├── frontend/
-│   ├── src/lib/genlayer.ts    # genlayer-js client + read/write wrappers
-│   ├── src/store/markets.ts   # Zustand store, mirrors writes on-chain
-│   ├── src/scene/             # R3F: Hub + 4 zones (football/crypto/news/profile)
-│   ├── src/ui/                # ProfilePanel, MarketList, BetModal, ZoneChip…
-│   └── .env.example           # copy → .env, fill VITE_CONTRACT_ADDRESS
-└── .claude/                   # project skills + agent framework
+│   └── PredictionArena.py     # Intelligent Contract (Python, multi-market)
+└── frontend/
+    ├── src/lib/genlayer.ts    # genlayer-js client + read/write wrappers
+    ├── src/store/markets.ts   # Zustand store, mirrors writes on-chain
+    ├── src/scene/             # R3F: Hub + 4 zones (football/crypto/news/profile)
+    ├── src/ui/                # ProfilePanel, MarketList, BetModal, HelpHint…
+    └── .env.example           # copy → .env, contains live deployed address
 ```
 
 ## Why this design wins on GenLayer

@@ -6,4 +6,13 @@ __pycache__/
 .DS_Store
 .vscode/
 .idea/
-.claude/settings.local.json
+
+# Agent framework files — keep out of the public repo.
+.claude/
+agents.md
+bootstrap.md
+heartbeat.md
+identity.md
+plan.md
+tools.md
+user.md
