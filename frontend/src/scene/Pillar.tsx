@@ -268,46 +268,30 @@ export function Pillar({ market, position = [0, 0, 0], tintOpen }: Props) {
         />
       )}
 
-      {/* Floating logo / chart screen */}
+      {/* Floating logo / chart screen — full match info up high */}
       <MarketScreen market={market} y={targetHeight + 2.6} />
 
-      <Billboard position={[0, targetHeight + 1.7, 0]}>
-        {/* Dark backing panel so text stays legible over busy 3D background */}
-        <mesh position={[0, -0.18, -0.005]}>
-          <planeGeometry args={[3.95, 1.0]} />
-          <meshBasicMaterial
-            color="#0a0418"
-            transparent
-            opacity={0.78}
-            depthWrite={false}
-          />
+      {/* Compact status strip BELOW the pillar so it never overlaps the
+          screen of this pillar or screens of pillars further away. The
+          question is already visible on the screen above; this row is
+          just pool size + countdown. */}
+      <Billboard position={[0, 0.55, 0]} renderOrder={5}>
+        <mesh position={[0, 0, -0.005]} renderOrder={4}>
+          <planeGeometry args={[2.6, 0.36]} />
+          <meshBasicMaterial color="#0a0418" transparent opacity={0.92} />
         </mesh>
-        {/* Thin neon underline on the panel */}
-        <mesh position={[0, -0.66, -0.004]}>
-          <planeGeometry args={[3.95, 0.025]} />
+        <mesh position={[0, -0.2, -0.004]} renderOrder={4}>
+          <planeGeometry args={[2.6, 0.018]} />
           <meshBasicMaterial color={baseColor} toneMapped={false} />
         </mesh>
-
         <Text
-          fontSize={0.26}
-          color="#f4f1ff"
-          anchorX="center"
-          anchorY="middle"
-          maxWidth={3.7}
-          textAlign="center"
-          outlineWidth={0.018}
-          outlineColor="#0a0420"
-        >
-          {market.question}
-        </Text>
-        <Text
-          position={[0, -0.42, 0]}
-          fontSize={0.16}
+          fontSize={0.14}
           color={baseColor}
           anchorX="center"
           anchorY="middle"
-          outlineWidth={0.012}
+          outlineWidth={0.01}
           outlineColor="#0a0420"
+          renderOrder={6}
         >
           {market.totalPool} PARENA ·{' '}
           {market.state === 'resolved' && market.winningOption != null

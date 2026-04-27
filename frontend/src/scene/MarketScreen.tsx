@@ -41,16 +41,13 @@ export function MarketScreen({ market, y }: Props) {
 
   return (
     <Billboard position={[0, y, 0]}>
-      <group>
-        {/* Background panel */}
+      <group renderOrder={2}>
+        {/* Background panel — depthWrite=true so screens of nearer
+            pillars properly occlude content of farther pillars instead
+            of bleeding through (the visual "all texts overlap" bug). */}
         <mesh>
           <planeGeometry args={[PANEL_W, PANEL_H]} />
-          <meshBasicMaterial
-            color={PANEL_BG}
-            transparent
-            opacity={0.92}
-            depthWrite={false}
-          />
+          <meshBasicMaterial color={PANEL_BG} opacity={0.95} transparent />
         </mesh>
 
         {/* Border (4 thin emissive bars) */}
