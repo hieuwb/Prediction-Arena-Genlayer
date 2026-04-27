@@ -6,11 +6,13 @@
 
 ## Live demo
 
+- **Repo:** https://github.com/hieuwb/Prediction-Arena-Genlayer
+- **Deployed contract:** `0x87215cA8cf4311Ae0a217A25503ffE586B070C73` (multi-market, holds all 9 demo markets keyed by `market_id`)
 - **Chain:** Genlayer Studio Network (chain id `61999`, RPC `https://studio.genlayer.com/api`)
 - **Wallet:** any EIP-1193 wallet (MetaMask, Rabby). The frontend programmatically adds the chain on first connect.
-- **Multi-market contract:** one deployment holds all 9 demo markets, keyed by `market_id`. Every bet on every pillar mirrors on-chain.
+- **Faucet:** top up testnet GEN at https://studio.genlayer.com/faucet
 
-> Deploy your own multi-market contract from [contracts/PredictionArena.py](./contracts/PredictionArena.py), paste the address into `frontend/.env`, then click **⚡ Initialize On-Chain** in the Profile zone — one signature seeds all 9 markets via `seed_markets(specs_json)`.
+> The deployed address is already wired into `frontend/.env.example` — `cp .env.example .env`, run, and connect a wallet. To deploy your own contract instead: paste [contracts/PredictionArena.py](./contracts/PredictionArena.py) into Studio → Compile → Deploy (no constructor args) → put the new address in `frontend/.env`.
 
 ## Current status
 
