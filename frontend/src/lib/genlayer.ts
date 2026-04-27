@@ -106,6 +106,20 @@ export function getUserAddress(): `0x${string}` | null {
   return cachedAddress
 }
 
+/** Real on-chain GEN balance for the connected wallet, in wei. */
+export async function getChainBalance(): Promise<bigint> {
+  if (!cachedAddress) throw new Error('Wallet not connected')
+  const provider = getProvider()
+  const hex = (await provider.request({
+    method: 'eth_getBalance',
+    params: [cachedAddress, 'latest'],
+  })) as string
+  return BigInt(hex)
+}
+
+/** URL to top up testnet GEN for the connected wallet. */
+export const STUDIO_FAUCET_URL = 'https://studio.genlayer.com/faucet'
+
 function requireClient() {
   if (!cachedClient || !cachedAddress) {
     throw new Error('Wallet not connected')

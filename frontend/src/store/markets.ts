@@ -37,6 +37,9 @@ type State = {
   selectedMarketId: string | null
   userAddress: string | null
   parenaBalance: number
+  /** Real on-chain GEN balance in wei. null until first read or when
+   *  wallet is disconnected. */
+  chainBalance: bigint | null
   userBets: Bet[]
   toasts: Toast[]
   currentView: View
@@ -50,6 +53,7 @@ type State = {
   disconnect: () => void
   claimFaucet: () => void
   seedOnChain: () => Promise<void>
+  refreshChainBalance: () => Promise<void>
   tickExpiredMarkets: () => void
   placeBet: (marketId: string, optionIdx: number, amount: number) => Promise<void>
   resolveMarket: (marketId: string) => Promise<void>
@@ -71,6 +75,7 @@ export const useMarketStore = create<State>()(
       selectedMarketId: null,
       userAddress: null,
       parenaBalance: 1000,
+      chainBalance: null,
       userBets: [],
       toasts: [],
       currentView: 'hub',
@@ -104,6 +109,17 @@ export const useMarketStore = create<State>()(
           sfxThunk(get().soundMuted)
           get().pushToast('success', `Connected ${addr.slice(0, 6)}…${addr.slice(-4)}`)
 
+          // Read on-chain GEN balance immediately so the UI doesn't
+          // pretend the wallet has anything before we know the truth.
+          await get().refreshChainBalance()
+          const wei = get().chainBalance ?? 0n
+          if (wei === 0n) {
+            get().pushToast(
+              'info',
+              'Wallet has 0 GEN — top up at studio.genlayer.com/faucet to bet on-chain',
+            )
+          }
+
           // Mandatory on-chain init: every bet hits the contract per
           // market_id, so the contract must already know the markets.
           // Probe list_markets() — if empty, seed; if already populated,
@@ -136,6 +152,7 @@ export const useMarketStore = create<State>()(
         gl.disconnect()
         set({
           userAddress: null,
+          chainBalance: null,
           parenaBalance: 1000,
           userBets: [],
         })
@@ -225,6 +242,8 @@ export const useMarketStore = create<State>()(
               'success',
               `Bet confirmed: ${hash.slice(0, 10)}… (${amount} on "${market.options[optionIdx]}")`,
             )
+            // Refresh chain balance — gas + value just spent.
+            void get().refreshChainBalance()
           } catch (err) {
             const msg = err instanceof Error ? err.message : String(err)
             pushToast('error', `Bet rejected: ${msg.slice(0, 100)}`)
@@ -334,6 +353,19 @@ export const useMarketStore = create<State>()(
         set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })),
 
       toggleSound: () => set((s) => ({ soundMuted: !s.soundMuted })),
+
+      refreshChainBalance: async () => {
+        if (!gl.getUserAddress()) {
+          set({ chainBalance: null })
+          return
+        }
+        try {
+          const wei = await gl.getChainBalance()
+          set({ chainBalance: wei })
+        } catch {
+          // Silent — RPC may be flaky, leave the previous value.
+        }
+      },
 
       tickExpiredMarkets: () => {
         const now = Date.now()
