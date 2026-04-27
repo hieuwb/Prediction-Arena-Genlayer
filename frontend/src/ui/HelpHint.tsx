@@ -163,6 +163,41 @@ function GuideModal({ onClose }: { onClose: () => void }) {
           <Mono>resolve</Mono> on the GitHub repo.
         </div>
 
+        <div className="mt-4 pt-3 border-t border-arena-gold/20">
+          <div className="text-[10px] uppercase tracking-[0.25em] font-bold text-arena-gold mb-2">
+            Contact
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <a
+              href="https://github.com/hieuwb/Dapp-genlayer"
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 border border-white/10 hover:border-white/40 transition group"
+            >
+              <span className="text-base" aria-hidden="true">⌥</span>
+              <div className="leading-tight">
+                <div className="text-[10px] uppercase tracking-widest text-white/45 font-bold">
+                  GitHub
+                </div>
+                <div className="text-xs font-mono text-white/85 group-hover:text-white truncate">
+                  hieuwb/Dapp-genlayer
+                </div>
+              </div>
+            </a>
+            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-indigo-500/10 border border-indigo-500/30">
+              <span className="text-base text-indigo-300" aria-hidden="true">
+                ✦
+              </span>
+              <div className="leading-tight">
+                <div className="text-[10px] uppercase tracking-widest text-indigo-300 font-bold">
+                  Discord
+                </div>
+                <div className="text-xs font-mono text-white/85">hieuwb</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <button
           onClick={onClose}
           className="mt-5 w-full py-2.5 rounded-lg bg-arena-cyan/15 border border-arena-cyan/40 text-arena-cyan text-sm font-bold uppercase tracking-widest hover:bg-arena-cyan/25 transition"
