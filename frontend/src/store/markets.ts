@@ -51,7 +51,7 @@ type State = {
   select: (id: string | null) => void
   connect: () => Promise<void>
   disconnect: () => void
-  claimFaucet: () => void
+  claimFaucet: () => Promise<void>
   seedOnChain: () => Promise<void>
   refreshChainBalance: () => Promise<void>
   tickExpiredMarkets: () => void
@@ -164,10 +164,40 @@ export const useMarketStore = create<State>()(
         get().pushToast('info', 'Wallet disconnected')
       },
 
-      claimFaucet: () => {
-        set((s) => ({ parenaBalance: s.parenaBalance + FAUCET_AMOUNT }))
-        sfxClink(get().soundMuted)
-        get().pushToast('success', `+${FAUCET_AMOUNT} PARENA from faucet`)
+      claimFaucet: async () => {
+        const { userAddress, chainBalance, pushToast } = get()
+        if (!userAddress) {
+          // Mock-only mode (no wallet) — keep snappy local top-up so demo
+          // reviewers without a wallet still get something to bet with.
+          set((s) => ({ parenaBalance: s.parenaBalance + FAUCET_AMOUNT }))
+          sfxClink(get().soundMuted)
+          pushToast('success', `+${FAUCET_AMOUNT} PARENA (demo)`)
+          return
+        }
+        // Charge 1 GEN per claim — proves the wallet really signed and
+        // makes PARENA "earnt" rather than free-mint. Burned to 0xdEaD.
+        const ONE_GEN = 10n ** 18n
+        if (chainBalance != null && chainBalance < ONE_GEN) {
+          pushToast(
+            'error',
+            'Need ≥ 1 GEN — top up at studio.genlayer.com/faucet first',
+          )
+          return
+        }
+        pushToast('info', 'Sign in wallet — 1 GEN fee for faucet…')
+        try {
+          const hash = await gl.payFaucetFee()
+          set((s) => ({ parenaBalance: s.parenaBalance + FAUCET_AMOUNT }))
+          sfxClink(get().soundMuted)
+          pushToast(
+            'success',
+            `+${FAUCET_AMOUNT} PARENA · 1 GEN burned (${hash.slice(0, 10)}…)`,
+          )
+          void get().refreshChainBalance()
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : String(err)
+          pushToast('error', `Faucet rejected: ${msg.slice(0, 80)}`)
+        }
       },
 
       seedOnChain: async () => {

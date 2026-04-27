@@ -56,10 +56,10 @@ export function WalletButton() {
       <div className="hidden sm:flex items-center gap-3 px-3 py-2 rounded-lg bg-black/50 backdrop-blur-md border border-arena-gold/30 shadow-lg shadow-arena-gold/10">
         <button
           onClick={claimFaucet}
-          title="Claim 1000 PARENA"
+          title="Burn 1 GEN to claim 1000 PARENA"
           className="text-[10px] font-bold uppercase tracking-widest text-arena-cyan hover:text-arena-cyan/80 px-2 py-1 rounded border border-arena-cyan/40 hover:border-arena-cyan/70 transition"
         >
-          + Faucet
+          + Faucet (1 GEN)
         </button>
         <div className="text-right leading-tight">
           <div className="text-[10px] uppercase tracking-widest text-white/45 font-bold">
@@ -132,7 +132,7 @@ export function WalletButton() {
             }}
             className="w-full mb-2 py-1.5 rounded text-[11px] font-bold uppercase tracking-widest text-arena-cyan border border-arena-cyan/40 hover:bg-arena-cyan/10"
           >
-            + Claim PARENA Faucet
+            + Claim 1000 PARENA · 1 GEN
           </button>
           <button
             onClick={() => {

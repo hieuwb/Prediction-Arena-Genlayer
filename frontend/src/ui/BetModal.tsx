@@ -3,6 +3,19 @@ import clsx from 'clsx'
 import { useMarketStore } from '../store/markets'
 import type { Market } from '../types'
 import { useCountdown, formatCountdown } from '../lib/countdown'
+import { TeamLogo } from './TeamLogo'
+
+// Football options always have the shape [TeamA, Draw, TeamB] — map an
+// option index to which team's crest to show, or null for "Draw".
+function footballCrest(market: Market, optionIdx: number) {
+  if (market.meta?.kind !== 'football') return null
+  if (optionIdx === 1) return null // "Draw" row, no crest
+  const teamIdx = optionIdx === 0 ? 0 : 1
+  return {
+    tag: market.meta.tags[teamIdx],
+    colors: market.meta.colors,
+  }
+}
 
 // Outer shell only handles "is a market selected" + escape/click-outside.
 // All per-market state (selected option, stake, pending) lives in
@@ -157,6 +170,12 @@ function BetModalInner({
               />
               <div className="relative flex items-center justify-between text-sm">
                 <div className="flex items-center gap-2">
+                  {(() => {
+                    const crest = footballCrest(market, i)
+                    return crest ? (
+                      <TeamLogo tag={crest.tag} colors={crest.colors} size={28} />
+                    ) : null
+                  })()}
                   {isWinning && <span className="text-arena-gold">★</span>}
                   <span className="font-medium">{opt}</span>
                   {myStake > 0 && (

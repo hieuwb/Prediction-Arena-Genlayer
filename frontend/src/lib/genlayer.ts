@@ -120,6 +120,30 @@ export async function getChainBalance(): Promise<bigint> {
 /** URL to top up testnet GEN for the connected wallet. */
 export const STUDIO_FAUCET_URL = 'https://studio.genlayer.com/faucet'
 
+const ONE_GEN = 10n ** 18n
+// EIP-150 burn address — sending here destroys the value, no contract
+// call needed. Acts as the "fee" charged for every PARENA faucet claim.
+const FAUCET_BURN_ADDR = '0x000000000000000000000000000000000000dEaD'
+
+/** Spend 1 GEN to "tax" a PARENA faucet claim. Returns the tx hash on
+ *  success. Throws on user rejection or insufficient funds. */
+export async function payFaucetFee(): Promise<`0x${string}`> {
+  if (!cachedAddress) throw new Error('Wallet not connected')
+  const provider = getProvider()
+  const valueHex = '0x' + ONE_GEN.toString(16)
+  const hash = (await provider.request({
+    method: 'eth_sendTransaction',
+    params: [
+      {
+        from: cachedAddress,
+        to: FAUCET_BURN_ADDR,
+        value: valueHex,
+      },
+    ],
+  })) as `0x${string}`
+  return hash
+}
+
 function requireClient() {
   if (!cachedClient || !cachedAddress) {
     throw new Error('Wallet not connected')

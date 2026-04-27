@@ -65,9 +65,10 @@ export function ProfilePanel() {
               <button
                 type="button"
                 onClick={claimFaucet}
+                title="Burn 1 GEN to claim 1000 PARENA"
                 className="text-[10px] font-bold uppercase tracking-widest text-arena-cyan hover:text-white px-2 py-1 rounded border border-arena-cyan/40 hover:border-arena-cyan/70 transition"
               >
-                + Faucet
+                + 1000 / 1 GEN
               </button>
             </div>
           </>

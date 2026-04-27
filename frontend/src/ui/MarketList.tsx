@@ -3,6 +3,7 @@ import clsx from 'clsx'
 import { useMarketStore } from '../store/markets'
 import type { Market, MarketCategory, View } from '../types'
 import { useCountdown, formatCountdown } from '../lib/countdown'
+import { TeamLogo } from './TeamLogo'
 
 function CountdownPill({
   target,
@@ -145,13 +146,28 @@ export function MarketList() {
                 aria-label={`Open market: ${m.question}`}
               >
                 <div className="flex items-start justify-between gap-2 mb-1.5">
-                  <div className="text-sm font-medium leading-snug">
-                    {view === 'hub' && (
-                      <span className="text-white/40 mr-1" aria-hidden="true">
-                        {CAT_ICON[m.category]}
-                      </span>
+                  <div className="text-sm font-medium leading-snug flex items-start gap-2">
+                    {m.meta?.kind === 'football' ? (
+                      <div className="flex -space-x-1.5 shrink-0 mt-0.5">
+                        <TeamLogo
+                          tag={m.meta.tags[0]}
+                          colors={m.meta.colors}
+                          size={22}
+                        />
+                        <TeamLogo
+                          tag={m.meta.tags[1]}
+                          colors={[m.meta.colors[1], m.meta.colors[0]]}
+                          size={22}
+                        />
+                      </div>
+                    ) : (
+                      view === 'hub' && (
+                        <span className="text-white/40" aria-hidden="true">
+                          {CAT_ICON[m.category]}
+                        </span>
+                      )
                     )}
-                    {m.question}
+                    <span>{m.question}</span>
                   </div>
                   <span
                     className={clsx(

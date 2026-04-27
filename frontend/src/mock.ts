@@ -25,11 +25,6 @@ function midnight(dayOffset: number): number {
   return d.getTime()
 }
 
-// HH:00 local time on (today + dayOffset).
-function atHour(dayOffset: number, hour: number, minute = 0): number {
-  return midnight(dayOffset) + hour * HOUR + minute * 60_000
-}
-
 // Next strict-future occurrence of weekday (0=Sun..6=Sat) at midnight.
 function nextWeekday(targetDay: number): number {
   const d = new Date()
@@ -49,11 +44,14 @@ function initialState(
   return 'open'
 }
 
-// ─── Football kickoffs ────────────────────────────────────────
+// ─── Football kickoffs (anchored to real fixture dates) ──────
 // Match window: bettingClosesAt = kickoff, resolvesAt = kickoff + 2h
-const ucl1Kickoff = atHour(4, 21) // ~Tue 21:00 (UCL slot)
-const plKickoff = atHour(9, 16, 30) // ~Sun 16:30 (PL slot)
-const clasicoKickoff = atHour(17, 21) // ~Mon 21:00 LaLiga
+function abs(year: number, month: number, day: number, hour: number, minute = 0): number {
+  return new Date(year, month - 1, day, hour, minute, 0, 0).getTime()
+}
+const ucl1Kickoff = abs(2026, 4, 28, 21, 0) // UCL semi-final 1st leg
+const plKickoff = abs(2026, 5, 3, 16, 30) // PL Sun fixture
+const clasicoKickoff = abs(2026, 5, 11, 21, 0) // LaLiga Clásico
 
 // ─── Crypto candles ───────────────────────────────────────────
 // BTC weekend: bettingClosesAt = 2 days before Sunday 00:00 = Fri 00:00
@@ -69,12 +67,12 @@ const ethBettingClosesAt = ethResolvesAt - 2 * HOUR
 const solResolvesAt = midnight(2)
 const solBettingClosesAt = solResolvesAt - 2 * HOUR
 
-// ─── News events ──────────────────────────────────────────────
-const starshipStart = atHour(4, 14) // Tue 14:00 — typical Starship window
+// ─── News events (anchored to real announcement dates) ──────
+const starshipStart = abs(2026, 5, 5, 14, 0) // Starship test window
 const starshipEnd = starshipStart + 3 * HOUR
-const fomcAnnounce = atHour(13, 18) // ~next Wed 18:00 UTC FOMC slot
-const fomcResolved = fomcAnnounce + 30 * 60_000 // +30min for statement read
-const wwdcKeynote = atHour(45, 17) // ~Mon Jun 8, 17:00 UTC
+const fomcAnnounce = abs(2026, 5, 7, 18, 0) // FOMC May 2026 (Wed-Thu)
+const fomcResolved = fomcAnnounce + 30 * 60_000
+const wwdcKeynote = abs(2026, 6, 8, 17, 0) // Apple WWDC 2026 keynote slot
 const wwdcEnd = wwdcKeynote + 2 * HOUR
 
 export const initialMarkets: Market[] = [
