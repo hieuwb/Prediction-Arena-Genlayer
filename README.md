@@ -6,42 +6,45 @@
 
 ## Live demo
 
-- **Deployed contract:** `0x60Da1d81d4E7a7ED00D1AD3552688b42084c706e` on Genlayer Studio Network (chain id `61999`, RPC `https://studio.genlayer.com/api`)
-- **Live market:** Brazil vs Jamaica — Who wins? · [BBC fixtures resolution URL](https://www.bbc.com/sport/football/scores-fixtures/2024-06-05)
+- **Chain:** Genlayer Studio Network (chain id `61999`, RPC `https://studio.genlayer.com/api`)
 - **Wallet:** any EIP-1193 wallet (MetaMask, Rabby). The frontend programmatically adds the chain on first connect.
-- The **Brazil-Jamaica** pillar mirrors writes on-chain; the other 8 markets stay in the local mock so reviewers can explore the UX without funding 9 contracts.
+- **Multi-market contract:** one deployment holds all 9 demo markets, keyed by `market_id`. Every bet on every pillar mirrors on-chain.
+
+> Deploy your own multi-market contract from [contracts/PredictionArena.py](./contracts/PredictionArena.py), paste the address into `frontend/.env`, then click **⚡ Initialize On-Chain** in the Profile zone — one signature seeds all 9 markets via `seed_markets(specs_json)`.
 
 ## Current status
 
 | Layer | Status | Path |
 |---|---|---|
-| Smart contract (deployed, single-market) | live on Studio | [contracts/PredictionArena.py](./contracts/PredictionArena.py) |
-| Multi-market roadmap source (not deployed) | reference for next milestone | [contracts/PredictionArena.multi.py](./contracts/PredictionArena.multi.py) |
-| Deploy guide | step-by-step for Studio | [contracts/DEPLOY.md](./contracts/DEPLOY.md) |
-| 3D frontend | full hub + 4 zones, MetaMask, PARENA faucet, mobile responsive, loading screen | [frontend/](./frontend/) |
-| Wallet + on-chain mirror | genlayer-js + window.ethereum | [frontend/src/lib/genlayer.ts](./frontend/src/lib/genlayer.ts) |
+| Smart contract (multi-market) | ready to deploy on Studio | [contracts/PredictionArena.py](./contracts/PredictionArena.py) |
+| Deploy + seed guide | step-by-step | [contracts/DEPLOY.md](./contracts/DEPLOY.md) |
+| 3D frontend | full hub + 4 zones, MetaMask/Rabby, PARENA faucet, mobile responsive, loading screen | [frontend/](./frontend/) |
+| Wallet + on-chain mirror | genlayer-js + window.ethereum, every bet mirrors per market_id | [frontend/src/lib/genlayer.ts](./frontend/src/lib/genlayer.ts) |
 
 ## Quick start
 
 ```bash
-# 1. Run the frontend
+# 1. Deploy the contract on GenLayer Studio
+#    → paste contracts/PredictionArena.py into https://studio.genlayer.com
+#    → Compile → Deploy (no constructor args)
+#    → copy the deployed address
+
+# 2. Run the frontend
 cd frontend
 npm install
-cp .env.example .env   # already wired to the live deployed contract
+cp .env.example .env
+# edit .env, set VITE_CONTRACT_ADDRESS=0xYOUR_ADDRESS
 npm run dev
 # → http://localhost:5173
-
-# 2. (Optional) Redeploy your own contract on GenLayer Studio
-#    → see contracts/DEPLOY.md
-#    → paste the new address into frontend/.env (VITE_CONTRACT_ADDRESS)
 ```
 
 In the browser:
 
-1. Click **Connect Wallet** — your wallet (MetaMask/Rabby) prompts to add **Genlayer Studio Network** (chain `61999`) and switch to it. Approve.
-2. Click **+ Faucet** to top up 1000 PARENA (frontend-only test token).
-3. Walk to the **Brazil-Jamaica** pillar in the Football zone, place a bet — the wallet pops up to sign the on-chain `place_bet` tx.
-4. Other 8 markets accept bets too, mock-only — no signature needed.
+1. Click **Connect Wallet** — wallet prompts to add **Genlayer Studio Network** (chain `61999`). Approve.
+2. Teleport to the **Profile** zone → click **⚡ Initialize On-Chain** → sign once. All 9 markets are now created on the deployed contract via `seed_markets`.
+3. Click **+ Faucet** in the wallet pill to top up 1000 PARENA (frontend-only test token).
+4. Walk to any pillar, place a bet — wallet signs `place_bet(market_id, option_idx)` with the stake as `gl.message.value`.
+5. The pool updates locally + on-chain. Click **Resolve** in any market to fire `resolve(market_id)` — validators fetch the resolution URL, the LLM picks a winner, and `eq_principle_strict_eq` enforces consensus.
 
 The frontend runs in **mock-only mode** automatically when `VITE_CONTRACT_ADDRESS` is unset.
 

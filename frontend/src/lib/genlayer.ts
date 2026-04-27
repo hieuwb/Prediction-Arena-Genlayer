@@ -1,27 +1,26 @@
 // GenLayer SDK glue.
 //
-// Wallet model: MetaMask (primary). User connects via window.ethereum,
-// frontend programmatically adds the GenLayer studionet (chain id 61999)
-// to MetaMask if missing, then signs txs through the standard EIP-1193
-// provider. genlayer-js routes signing requests to the provider when one
-// is passed in createClient({ provider }).
+// Wallet model: any EIP-1193 wallet (MetaMask, Rabby). User connects via
+// window.ethereum, frontend programmatically adds the GenLayer studionet
+// (chain id 61999) if missing, then signs txs through the standard
+// provider. genlayer-js routes signing through the provider when one is
+// passed in createClient({ provider }).
 //
-// Token model: bets in the deployed PredictionArena contract use the
-// native chain currency (GEN) via gl.message.value. The frontend brands
-// the user's spending balance as "PARENA" — a purely internal token
-// tracked in the zustand store with a faucet (+1000 per click). The
-// numeric amount sent on-chain equals the PARENA stake the user picks.
+// Contract model: multi-market PredictionArena. One deployed contract
+// holds N markets keyed by market_id. Frontend mirrors every bet on
+// chain — no per-market gating. Markets are created up-front via a
+// one-shot seed_markets(specs_json) call (the "Initialize on-chain"
+// button in ProfilePanel).
+//
+// Token model: bets attach native chain currency (GEN). The frontend
+// brands the user's spending balance as "PARENA" — purely display, no
+// on-chain token.
 
 import { createClient, chains } from 'genlayer-js'
 
 const CONTRACT_ADDRESS = import.meta.env.VITE_CONTRACT_ADDRESS as
   | `0x${string}`
   | undefined
-
-/** Which mock market id mirrors to the deployed contract. */
-export const LIVE_MARKET_ID =
-  (import.meta.env.VITE_LIVE_MARKET_ID as string | undefined) ??
-  'bra-jam-20240605'
 
 const STUDIONET_CHAIN_ID_HEX = '0xf22f' // 61999
 const STUDIONET_PARAMS = {
@@ -52,13 +51,12 @@ let cachedClient: ReturnType<typeof createClient> | null = null
 
 function getProvider(): Eip1193Provider {
   if (typeof window === 'undefined' || !window.ethereum) {
-    throw new Error('MetaMask not detected — install it from metamask.io')
+    throw new Error('Wallet not detected — install MetaMask or Rabby')
   }
   return window.ethereum
 }
 
 async function ensureStudionet(provider: Eip1193Provider): Promise<void> {
-  // Try to switch first; if MetaMask doesn't know the chain (4902), add it.
   try {
     await provider.request({
       method: 'wallet_switchEthereumChain',
@@ -83,14 +81,13 @@ export async function connectMetaMask(): Promise<`0x${string}`> {
     method: 'eth_requestAccounts',
   })) as string[]
   if (!accounts || accounts.length === 0) {
-    throw new Error('No accounts returned by MetaMask')
+    throw new Error('No accounts returned by wallet')
   }
   await ensureStudionet(provider)
   cachedAddress = accounts[0] as `0x${string}`
   cachedClient = createClient({
     chain: chains.studionet,
     account: cachedAddress,
-    // genlayer-js routes signing requests through this provider
     provider: provider as unknown as never,
   })
   return cachedAddress
@@ -103,10 +100,6 @@ export function disconnect(): void {
 
 export function isEnabled(): boolean {
   return !!CONTRACT_ADDRESS
-}
-
-export function isLiveMarket(marketId: string): boolean {
-  return isEnabled() && marketId === LIVE_MARKET_ID
 }
 
 export function getUserAddress(): `0x${string}` | null {
@@ -123,7 +116,7 @@ function requireClient() {
   return { client: cachedClient, contract: CONTRACT_ADDRESS }
 }
 
-// ─── On-chain market shape (matches PredictionArena.get_data dict) ────
+// ─── On-chain market shape (matches PredictionArena.get_market dict) ──
 
 export type ContractMarketData = {
   question: string
@@ -136,16 +129,54 @@ export type ContractMarketData = {
   reasoning: string
 }
 
-export async function getData(): Promise<ContractMarketData> {
+export type MarketSpec = {
+  id: string
+  question: string
+  resolution_url: string
+  options: string[]
+}
+
+// ─── Reads ────────────────────────────────────────────────────────────
+
+export async function getMarket(
+  marketId: string,
+): Promise<ContractMarketData | null> {
   const { client, contract } = requireClient()
   const result = await client.readContract({
     address: contract,
-    functionName: 'get_data',
+    functionName: 'get_market',
+    kwargs: { market_id: marketId },
   })
+  // Empty dict means "not found" (contract returns {} for missing markets).
+  if (
+    !result ||
+    typeof result !== 'object' ||
+    Object.keys(result as object).length === 0
+  ) {
+    return null
+  }
   return result as unknown as ContractMarketData
 }
 
+export async function listMarkets(): Promise<{
+  market_ids: string[]
+  markets: Record<string, ContractMarketData>
+}> {
+  const { client, contract } = requireClient()
+  const result = await client.readContract({
+    address: contract,
+    functionName: 'list_markets',
+  })
+  return result as unknown as {
+    market_ids: string[]
+    markets: Record<string, ContractMarketData>
+  }
+}
+
+// ─── Writes ───────────────────────────────────────────────────────────
+
 export async function placeBet(
+  marketId: string,
   optionIdx: number,
   amount: bigint,
 ): Promise<`0x${string}`> {
@@ -153,18 +184,68 @@ export async function placeBet(
   const hash = await client.writeContract({
     address: contract,
     functionName: 'place_bet',
-    kwargs: { option_idx: optionIdx },
+    kwargs: { market_id: marketId, option_idx: optionIdx },
     value: amount,
   })
   await client.waitForTransactionReceipt({ hash })
   return hash
 }
 
-export async function resolve(): Promise<`0x${string}`> {
+export async function resolve(marketId: string): Promise<`0x${string}`> {
   const { client, contract } = requireClient()
   const hash = await client.writeContract({
     address: contract,
     functionName: 'resolve',
+    kwargs: { market_id: marketId },
+    value: 0n,
+  })
+  await client.waitForTransactionReceipt({ hash })
+  return hash
+}
+
+export async function createMarket(
+  marketId: string,
+  question: string,
+  resolutionUrl: string,
+  optionsJson: string,
+): Promise<`0x${string}`> {
+  const { client, contract } = requireClient()
+  const hash = await client.writeContract({
+    address: contract,
+    functionName: 'create_market',
+    kwargs: {
+      market_id: marketId,
+      question,
+      resolution_url: resolutionUrl,
+      options_json: optionsJson,
+    },
+    value: 0n,
+  })
+  await client.waitForTransactionReceipt({ hash })
+  return hash
+}
+
+export async function seedMarkets(specs: MarketSpec[]): Promise<`0x${string}`> {
+  const { client, contract } = requireClient()
+  const hash = await client.writeContract({
+    address: contract,
+    functionName: 'seed_markets',
+    kwargs: { specs_json: JSON.stringify(specs) },
+    value: 0n,
+  })
+  await client.waitForTransactionReceipt({ hash })
+  return hash
+}
+
+export async function proposeMarketFromNews(
+  marketId: string,
+  newsUrl: string,
+): Promise<`0x${string}`> {
+  const { client, contract } = requireClient()
+  const hash = await client.writeContract({
+    address: contract,
+    functionName: 'propose_market_from_news',
+    kwargs: { market_id: marketId, news_url: newsUrl },
     value: 0n,
   })
   await client.waitForTransactionReceipt({ hash })

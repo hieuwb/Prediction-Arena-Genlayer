@@ -11,17 +11,17 @@ import {
 } from '../lib/sound'
 import * as gl from '../lib/genlayer'
 
-// Fire-and-forget on-chain mirror. Single-market design: only the bet
-// on `LIVE_MARKET_ID` is mirrored to the deployed contract; other
-// markets stay mock-only. Keeps the local UI flow responsive while the
-// on-chain tx happens in the background. Toasts surface result.
+// Fire-and-forget on-chain mirror. Multi-market design: every bet/resolve
+// hits the deployed contract for its market_id. Skipped only when the
+// frontend isn't connected to a contract (mock-only mode) or the user
+// hasn't connected a wallet yet — the local UI flow stays responsive
+// either way and the toast surfaces the chain result asynchronously.
 function mirrorOnChain(
-  marketId: string,
   label: string,
   fn: () => Promise<`0x${string}`>,
   pushToast: (kind: ToastKind, message: string) => void,
 ) {
-  if (!gl.isLiveMarket(marketId)) return
+  if (!gl.isEnabled() || !gl.getUserAddress()) return
   fn()
     .then((hash) => {
       pushToast('success', `${label} on-chain: ${hash.slice(0, 10)}…`)
@@ -45,11 +45,14 @@ type State = {
   xConnected: boolean
   connecting: boolean
 
+  seeding: boolean
+
   // selectors / mutators
   select: (id: string | null) => void
   connect: () => Promise<void>
   disconnect: () => void
   claimFaucet: () => void
+  seedOnChain: () => Promise<void>
   placeBet: (marketId: string, optionIdx: number, amount: number) => Promise<void>
   resolveMarket: (marketId: string) => Promise<void>
   claim: (marketId: string) => Promise<void>
@@ -79,6 +82,7 @@ export const useMarketStore = create<State>()(
       discordConnected: false,
       xConnected: false,
       connecting: false,
+      seeding: false,
 
       select: (id) => set({ selectedMarketId: id }),
 
@@ -128,6 +132,36 @@ export const useMarketStore = create<State>()(
         set((s) => ({ parenaBalance: s.parenaBalance + FAUCET_AMOUNT }))
         sfxClink(get().soundMuted)
         get().pushToast('success', `+${FAUCET_AMOUNT} PARENA from faucet`)
+      },
+
+      seedOnChain: async () => {
+        const { userAddress, markets, pushToast, seeding } = get()
+        if (seeding) return
+        if (!userAddress) {
+          pushToast('error', 'Connect wallet first')
+          return
+        }
+        if (!gl.isEnabled()) {
+          pushToast('error', 'VITE_CONTRACT_ADDRESS not set')
+          return
+        }
+        set({ seeding: true })
+        pushToast('info', 'Seeding 9 markets on-chain (1 signature)…')
+        try {
+          const specs: gl.MarketSpec[] = markets.map((m) => ({
+            id: m.id,
+            question: m.question,
+            resolution_url: m.resolutionUrl,
+            options: m.options,
+          }))
+          const hash = await gl.seedMarkets(specs)
+          pushToast('success', `Seeded on-chain: ${hash.slice(0, 10)}…`)
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : String(err)
+          pushToast('error', `Seed failed: ${msg.slice(0, 100)}`)
+        } finally {
+          set({ seeding: false })
+        }
       },
 
       placeBet: async (marketId, optionIdx, amount) => {
@@ -182,9 +216,8 @@ export const useMarketStore = create<State>()(
         sfxClink(get().soundMuted)
         pushToast('success', `Staked ${amount} on "${market.options[optionIdx]}"`)
         mirrorOnChain(
-          marketId,
           'Bet',
-          () => gl.placeBet(optionIdx, BigInt(amount)),
+          () => gl.placeBet(marketId, optionIdx, BigInt(amount)),
           pushToast,
         )
       },
@@ -215,7 +248,7 @@ export const useMarketStore = create<State>()(
         }))
         sfxChime(get().soundMuted)
         get().pushToast('success', `Resolved → "${market.options[market.mockWinner]}"`)
-        mirrorOnChain(marketId, 'Resolve', () => gl.resolve(), get().pushToast)
+        mirrorOnChain('Resolve', () => gl.resolve(marketId), get().pushToast)
       },
 
       claim: async (marketId) => {

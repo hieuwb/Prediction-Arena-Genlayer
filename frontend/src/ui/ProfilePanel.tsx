@@ -18,6 +18,8 @@ export function ProfilePanel() {
   const teleport = useMarketStore((s) => s.teleport)
   const select = useMarketStore((s) => s.select)
   const claimFaucet = useMarketStore((s) => s.claimFaucet)
+  const seedOnChain = useMarketStore((s) => s.seedOnChain)
+  const seeding = useMarketStore((s) => s.seeding)
 
   const joinedBets = useMemo(() => {
     const byId = new Map(markets.map((m) => [m.id, m]))
@@ -79,6 +81,27 @@ export function ProfilePanel() {
           </div>
         )}
       </div>
+
+      {/* On-chain admin */}
+      {userAddress && (
+        <div className="rounded-lg bg-arena-rose/10 border border-arena-rose/30 p-3 mb-3">
+          <div className="text-[10px] uppercase tracking-widest text-arena-rose mb-1">
+            On-chain admin
+          </div>
+          <p className="text-[11px] text-white/55 mb-2 leading-snug">
+            One-time setup: seed all 9 markets into the deployed contract
+            (one wallet signature, idempotent).
+          </p>
+          <button
+            type="button"
+            onClick={seedOnChain}
+            disabled={seeding}
+            className="w-full text-[11px] font-bold uppercase tracking-widest text-arena-rose px-3 py-1.5 rounded border border-arena-rose/50 hover:bg-arena-rose/15 transition disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {seeding ? 'Seeding…' : '⚡ Initialize On-Chain'}
+          </button>
+        </div>
+      )}
 
       {/* Social */}
       <div className="space-y-1.5 mb-3">
