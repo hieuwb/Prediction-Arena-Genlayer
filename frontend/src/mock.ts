@@ -50,11 +50,11 @@ function initialState(
 function abs(year: number, month: number, day: number, hour: number, minute = 0): number {
   return Date.UTC(year, month - 1, day, hour, minute, 0, 0)
 }
-// Real Round 34/32 fixtures for 27/04/2026 evening UTC
-// (= 28/04 02:00 ICT). Source: televised league schedules.
-const munBreKickoff = abs(2026, 4, 27, 19, 0) // PL Round 34
-const lazUdiKickoff = abs(2026, 4, 27, 18, 45) // Serie A Round 34
-const espLevKickoff = abs(2026, 4, 27, 19, 0) // La Liga Round 32
+// Real Premier League fixtures sourced from
+// https://www.espn.com/soccer/schedule/_/league/eng.1
+const munBreKickoff = abs(2026, 4, 27, 19, 0) // Mon 27/04 — Man Utd vs Brentford
+const leeBurKickoff = abs(2026, 5, 1, 19, 0)  // Fri 01/05 — Leeds vs Burnley
+const newBhaKickoff = abs(2026, 5, 2, 14, 0)  // Sat 02/05 — Newcastle vs Brighton
 
 // ─── Crypto candles ───────────────────────────────────────────
 // BTC weekend: bettingClosesAt = 2 days before Sunday 00:00 = Fri 00:00
@@ -101,43 +101,43 @@ export const initialMarkets: Market[] = [
     },
   },
   {
-    id: 'laz-udi-seriea-r34-20260427',
-    question: 'Lazio vs Udinese — Serie A 27/04/2026?',
-    resolutionUrl: 'https://en.wikipedia.org/wiki/2025%E2%80%9326_Serie_A',
-    options: ['Lazio', 'Draw', 'Udinese'],
-    optionPools: [140, 80, 100],
-    totalPool: 320,
-    state: initialState(lazUdiKickoff, lazUdiKickoff + 2 * HOUR),
+    id: 'lee-bur-pl-20260501',
+    question: 'Leeds United vs Burnley — Premier League 01/05/2026?',
+    resolutionUrl: 'https://en.wikipedia.org/wiki/2025%E2%80%9326_Premier_League',
+    options: ['Leeds United', 'Draw', 'Burnley'],
+    optionPools: [150, 70, 90],
+    totalPool: 310,
+    state: initialState(leeBurKickoff, leeBurKickoff + 2 * HOUR),
     winningOption: null,
     category: 'football',
     mockWinner: 0,
-    bettingClosesAt: lazUdiKickoff,
-    resolvesAt: lazUdiKickoff + 2 * HOUR,
+    bettingClosesAt: leeBurKickoff,
+    resolvesAt: leeBurKickoff + 2 * HOUR,
     meta: {
       kind: 'football',
-      teams: ['Lazio', 'Udinese'],
-      tags: ['LAZ', 'UDI'],
-      colors: ['#87ceeb', '#000000'],
+      teams: ['Leeds United', 'Burnley'],
+      tags: ['LEE', 'BUR'],
+      colors: ['#fcdb05', '#6c1d45'],
     },
   },
   {
-    id: 'esp-lev-laliga-r32-20260427',
-    question: 'Espanyol vs Levante — La Liga 27/04/2026?',
-    resolutionUrl: 'https://en.wikipedia.org/wiki/2025%E2%80%9326_La_Liga',
-    options: ['Espanyol', 'Draw', 'Levante'],
-    optionPools: [120, 90, 130],
-    totalPool: 340,
-    state: initialState(espLevKickoff, espLevKickoff + 2 * HOUR),
+    id: 'new-bha-pl-20260502',
+    question: 'Newcastle vs Brighton — Premier League 02/05/2026?',
+    resolutionUrl: 'https://en.wikipedia.org/wiki/2025%E2%80%9326_Premier_League',
+    options: ['Newcastle', 'Draw', 'Brighton'],
+    optionPools: [180, 75, 110],
+    totalPool: 365,
+    state: initialState(newBhaKickoff, newBhaKickoff + 2 * HOUR),
     winningOption: null,
     category: 'football',
-    mockWinner: 2,
-    bettingClosesAt: espLevKickoff,
-    resolvesAt: espLevKickoff + 2 * HOUR,
+    mockWinner: 0,
+    bettingClosesAt: newBhaKickoff,
+    resolvesAt: newBhaKickoff + 2 * HOUR,
     meta: {
       kind: 'football',
-      teams: ['Espanyol', 'Levante'],
-      tags: ['ESP', 'LEV'],
-      colors: ['#003d99', '#94070a'],
+      teams: ['Newcastle', 'Brighton'],
+      tags: ['NEW', 'BHA'],
+      colors: ['#241f20', '#0057b8'],
     },
   },
 

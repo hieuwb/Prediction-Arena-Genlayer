@@ -140,6 +140,11 @@ function BetModalInner({
             market.totalPool > 0
               ? Math.round((pool / market.totalPool) * 100)
               : 0
+          // Polymarket-style multiplier — implied payout per 1 PARENA
+          // staked, computed parimutuel-style from current pool ratio.
+          // A bet of S on this option pays S × totalPool / optionPool
+          // when this option wins (more if the option is unfavoured).
+          const multiplier = pool > 0 ? market.totalPool / pool : 1
           const myStake = myStakeByOption[i] ?? 0
           const isWinning =
             market.state === 'resolved' && market.winningOption === i
@@ -168,8 +173,8 @@ function BetModalInner({
                 )}
                 style={{ width: `${pct}%` }}
               />
-              <div className="relative flex items-center justify-between text-sm">
-                <div className="flex items-center gap-2">
+              <div className="relative flex items-center justify-between gap-3 text-sm">
+                <div className="flex items-center gap-2 min-w-0">
                   {(() => {
                     const crest = footballCrest(market, i)
                     return crest ? (
@@ -177,16 +182,33 @@ function BetModalInner({
                     ) : null
                   })()}
                   {isWinning && <span className="text-arena-gold">★</span>}
-                  <span className="font-medium">{opt}</span>
+                  <span className="font-medium truncate">{opt}</span>
                   {myStake > 0 && (
-                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-white/60 font-mono">
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-white/60 font-mono shrink-0">
                       you: {myStake}
                     </span>
                   )}
                 </div>
-                <span className="text-xs font-mono text-white/60">
-                  {pool} · {pct}%
-                </span>
+                <div className="flex items-center gap-2 shrink-0">
+                  <span
+                    className={clsx(
+                      'text-xs font-mono',
+                      isSelected ? 'text-arena-cyan' : 'text-white/60',
+                    )}
+                  >
+                    {pct}%
+                  </span>
+                  <span
+                    className={clsx(
+                      'text-[11px] font-mono px-1.5 py-0.5 rounded border',
+                      isSelected
+                        ? 'border-arena-cyan/60 text-arena-cyan bg-arena-cyan/10'
+                        : 'border-white/15 text-white/55',
+                    )}
+                  >
+                    {multiplier.toFixed(2)}×
+                  </span>
+                </div>
               </div>
             </button>
           )
@@ -207,8 +229,35 @@ function BetModalInner({
             min={1}
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
-            className="w-full px-3 py-2 mb-4 rounded-lg bg-white/5 border border-white/10 focus:border-arena-cyan/60 outline-none text-sm font-mono"
+            className="w-full px-3 py-2 mb-2 rounded-lg bg-white/5 border border-white/10 focus:border-arena-cyan/60 outline-none text-sm font-mono"
           />
+          {(() => {
+            const stake = parseFloat(amount) || 0
+            if (stake <= 0) return null
+            // Polymarket-style payout preview: simulate adding this stake
+            // to the option pool, then compute parimutuel payout if the
+            // option wins. payoutIfWin = stake × (totalPool + stake) / (optionPool + stake)
+            const newOptionPool = market.optionPools[optionIdx] + stake
+            const newTotalPool = market.totalPool + stake
+            const payoutIfWin =
+              newOptionPool > 0
+                ? Math.floor((stake * newTotalPool) / newOptionPool)
+                : 0
+            const profit = payoutIfWin - stake
+            return (
+              <div className="mb-4 px-3 py-2 rounded-lg bg-arena-cyan/10 border border-arena-cyan/30 text-xs flex items-center justify-between">
+                <span className="text-white/70">
+                  If "{market.options[optionIdx]}" wins
+                </span>
+                <span className="font-mono text-arena-cyan">
+                  +{profit} PARENA{' '}
+                  <span className="text-arena-cyan/60">
+                    (= {payoutIfWin})
+                  </span>
+                </span>
+              </div>
+            )
+          })()}
           <button
             disabled={pending || !userAddress}
             onClick={async () => {

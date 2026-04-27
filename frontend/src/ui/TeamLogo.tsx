@@ -12,10 +12,10 @@ const PATTERN_BY_TAG: Record<string, Pattern> = {
   FCB: 'stripes',  // Barcelona — vertical blaugrana stripes
   MUN: 'solid',    // Manchester United — solid red
   BRE: 'stripes',  // Brentford — red & white stripes
-  LAZ: 'band',     // Lazio — sky blue with white band
-  UDI: 'stripes',  // Udinese — black & white stripes
-  ESP: 'stripes',  // Espanyol — blue & white stripes
-  LEV: 'split',    // Levante — split red & blue
+  LEE: 'split',    // Leeds — yellow/white split
+  BUR: 'stripes',  // Burnley — claret & sky-blue stripes
+  NEW: 'stripes',  // Newcastle — black & white stripes
+  BHA: 'stripes',  // Brighton — blue & white stripes
 }
 
 export function TeamLogo({
