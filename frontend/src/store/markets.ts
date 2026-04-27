@@ -476,7 +476,7 @@ export const useMarketStore = create<State>()(
     }),
     {
       name: 'arena-store',
-      version: 5,
+      version: 6,
       // Persist user-owned state + scene state. Skip transient bits
       // (toasts, selected modal) so reload doesn't restore a half-open
       // bet flow.

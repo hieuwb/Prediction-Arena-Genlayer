@@ -8,8 +8,14 @@ const PATTERN_BY_TAG: Record<string, Pattern> = {
   RMA: 'band',     // Real Madrid — white with central band
   ARS: 'band',     // Arsenal — red with white horizontal band
   MCI: 'solid',    // Man City — sky blue
-  LIV: 'solid',    // Liverpool — solid red with gold accent in stripe
+  LIV: 'solid',    // Liverpool — solid red
   FCB: 'stripes',  // Barcelona — vertical blaugrana stripes
+  MUN: 'solid',    // Manchester United — solid red
+  BRE: 'stripes',  // Brentford — red & white stripes
+  LAZ: 'band',     // Lazio — sky blue with white band
+  UDI: 'stripes',  // Udinese — black & white stripes
+  ESP: 'stripes',  // Espanyol — blue & white stripes
+  LEV: 'split',    // Levante — split red & blue
 }
 
 export function TeamLogo({

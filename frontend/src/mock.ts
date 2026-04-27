@@ -45,13 +45,16 @@ function initialState(
 }
 
 // ─── Football kickoffs (anchored to real fixture dates) ──────
-// Match window: bettingClosesAt = kickoff, resolvesAt = kickoff + 2h
+// All times in UTC so the demo lines up regardless of viewer
+// timezone. Match window: bettingClosesAt = kickoff, resolvesAt = +2h.
 function abs(year: number, month: number, day: number, hour: number, minute = 0): number {
-  return new Date(year, month - 1, day, hour, minute, 0, 0).getTime()
+  return Date.UTC(year, month - 1, day, hour, minute, 0, 0)
 }
-const ucl1Kickoff = abs(2026, 4, 28, 21, 0) // UCL semi-final 1st leg
-const plKickoff = abs(2026, 5, 3, 16, 30) // PL Sun fixture
-const clasicoKickoff = abs(2026, 5, 11, 21, 0) // LaLiga Clásico
+// Real Round 34/32 fixtures for 27/04/2026 evening UTC
+// (= 28/04 02:00 ICT). Source: televised league schedules.
+const munBreKickoff = abs(2026, 4, 27, 19, 0) // PL Round 34
+const lazUdiKickoff = abs(2026, 4, 27, 18, 45) // Serie A Round 34
+const espLevKickoff = abs(2026, 4, 27, 19, 0) // La Liga Round 32
 
 // ─── Crypto candles ───────────────────────────────────────────
 // BTC weekend: bettingClosesAt = 2 days before Sunday 00:00 = Fri 00:00
@@ -78,64 +81,63 @@ const wwdcEnd = wwdcKeynote + 2 * HOUR
 export const initialMarkets: Market[] = [
   // ─── Football ──────────────────────────────────────────────
   {
-    id: 'rm-arsenal-ucl-sf-2026',
-    question: 'Real Madrid vs Arsenal — UCL semi-final 2026, who advances?',
-    resolutionUrl:
-      'https://en.wikipedia.org/wiki/2025%E2%80%9326_UEFA_Champions_League_knockout_phase',
-    options: ['Real Madrid', 'Draw', 'Arsenal'],
-    optionPools: [220, 80, 160],
-    totalPool: 460,
-    state: initialState(ucl1Kickoff, ucl1Kickoff + 2 * HOUR),
+    id: 'mun-bre-pl-r34-20260427',
+    question: 'Manchester United vs Brentford — Premier League 27/04/2026?',
+    resolutionUrl: 'https://en.wikipedia.org/wiki/2025%E2%80%9326_Premier_League',
+    options: ['Manchester United', 'Draw', 'Brentford'],
+    optionPools: [180, 70, 110],
+    totalPool: 360,
+    state: initialState(munBreKickoff, munBreKickoff + 2 * HOUR),
     winningOption: null,
     category: 'football',
     mockWinner: 0,
-    bettingClosesAt: ucl1Kickoff,
-    resolvesAt: ucl1Kickoff + 2 * HOUR,
+    bettingClosesAt: munBreKickoff,
+    resolvesAt: munBreKickoff + 2 * HOUR,
     meta: {
       kind: 'football',
-      teams: ['Real Madrid', 'Arsenal'],
-      tags: ['RMA', 'ARS'],
-      colors: ['#e8e8e8', '#ef0107'],
+      teams: ['Manchester United', 'Brentford'],
+      tags: ['MUN', 'BRE'],
+      colors: ['#da291c', '#e30613'],
     },
   },
   {
-    id: 'mci-liv-epl-decider-2026',
-    question: 'Man City vs Liverpool — PL 2025/26 decider?',
-    resolutionUrl: 'https://en.wikipedia.org/wiki/2025%E2%80%9326_Premier_League',
-    options: ['Man City', 'Draw', 'Liverpool'],
-    optionPools: [120, 60, 180],
-    totalPool: 360,
-    state: initialState(plKickoff, plKickoff + 2 * HOUR),
+    id: 'laz-udi-seriea-r34-20260427',
+    question: 'Lazio vs Udinese — Serie A 27/04/2026?',
+    resolutionUrl: 'https://en.wikipedia.org/wiki/2025%E2%80%9326_Serie_A',
+    options: ['Lazio', 'Draw', 'Udinese'],
+    optionPools: [140, 80, 100],
+    totalPool: 320,
+    state: initialState(lazUdiKickoff, lazUdiKickoff + 2 * HOUR),
     winningOption: null,
     category: 'football',
-    mockWinner: 2,
-    bettingClosesAt: plKickoff,
-    resolvesAt: plKickoff + 2 * HOUR,
+    mockWinner: 0,
+    bettingClosesAt: lazUdiKickoff,
+    resolvesAt: lazUdiKickoff + 2 * HOUR,
     meta: {
       kind: 'football',
-      teams: ['Man City', 'Liverpool'],
-      tags: ['MCI', 'LIV'],
-      colors: ['#6cabdd', '#c8102e'],
+      teams: ['Lazio', 'Udinese'],
+      tags: ['LAZ', 'UDI'],
+      colors: ['#87ceeb', '#000000'],
     },
   },
   {
-    id: 'rm-barca-clasico-202605',
-    question: 'Real Madrid vs Barcelona — La Liga El Clásico 11/05/2026?',
+    id: 'esp-lev-laliga-r32-20260427',
+    question: 'Espanyol vs Levante — La Liga 27/04/2026?',
     resolutionUrl: 'https://en.wikipedia.org/wiki/2025%E2%80%9326_La_Liga',
-    options: ['Real Madrid', 'Draw', 'Barcelona'],
-    optionPools: [240, 70, 250],
-    totalPool: 560,
-    state: initialState(clasicoKickoff, clasicoKickoff + 2 * HOUR),
+    options: ['Espanyol', 'Draw', 'Levante'],
+    optionPools: [120, 90, 130],
+    totalPool: 340,
+    state: initialState(espLevKickoff, espLevKickoff + 2 * HOUR),
     winningOption: null,
     category: 'football',
     mockWinner: 2,
-    bettingClosesAt: clasicoKickoff,
-    resolvesAt: clasicoKickoff + 2 * HOUR,
+    bettingClosesAt: espLevKickoff,
+    resolvesAt: espLevKickoff + 2 * HOUR,
     meta: {
       kind: 'football',
-      teams: ['Real Madrid', 'Barcelona'],
-      tags: ['RMA', 'FCB'],
-      colors: ['#e8e8e8', '#a4174c'],
+      teams: ['Espanyol', 'Levante'],
+      tags: ['ESP', 'LEV'],
+      colors: ['#003d99', '#94070a'],
     },
   },
 
