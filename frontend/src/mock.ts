@@ -1,16 +1,82 @@
-import type { Market } from './types'
+import type { Market, MarketState } from './types'
 
-// Staggered close offsets — each market gets `closesAt = bootTime + offset`
-// so the demo cycles through resolutions without all 9 firing at once.
-// Short offsets up front so reviewers see the auto-resolve flow within
-// 1-2 minutes of opening the app.
-const MIN = 60_000
-const BOOT = Date.now()
-const closeIn = (ms: number) => BOOT + ms
+// Two-phase timing model:
+//   bettingClosesAt — when bet input disables (kickoff / candle close /
+//                     event start)
+//   resolvesAt      — when the result page is read by validators
+//
+// open  : now < bettingClosesAt
+// await : bettingClosesAt <= now < resolvesAt   ← match playing / candle
+//                                                 forming / vote tallying
+// (then tickMarketStates fires resolveMarket → pending → resolved)
+//
+// Times are computed from boot so the demo always shows fresh,
+// soon-to-close markets without manual maintenance.
 
-// Reference date for the demo: Apr 24, 2026. Markets reflect events
-// scheduled across late-Apr through end-of-Q2 2026 so the questions
-// stay current without manual maintenance every demo cycle.
+const HOUR = 60 * 60_000
+const DAY = 24 * HOUR
+const NOW = Date.now()
+
+// Local midnight at the start of (today + dayOffset).
+function midnight(dayOffset: number): number {
+  const d = new Date()
+  d.setHours(0, 0, 0, 0)
+  d.setDate(d.getDate() + dayOffset)
+  return d.getTime()
+}
+
+// HH:00 local time on (today + dayOffset).
+function atHour(dayOffset: number, hour: number, minute = 0): number {
+  return midnight(dayOffset) + hour * HOUR + minute * 60_000
+}
+
+// Next strict-future occurrence of weekday (0=Sun..6=Sat) at midnight.
+function nextWeekday(targetDay: number): number {
+  const d = new Date()
+  d.setHours(0, 0, 0, 0)
+  const today = d.getDay()
+  const offset = ((targetDay - today + 7) % 7) || 7
+  d.setDate(d.getDate() + offset)
+  return d.getTime()
+}
+
+function initialState(
+  bettingClosesAt: number,
+  resolvesAt: number,
+): MarketState {
+  if (resolvesAt <= NOW) return 'pending'
+  if (bettingClosesAt <= NOW) return 'awaiting'
+  return 'open'
+}
+
+// ─── Football kickoffs ────────────────────────────────────────
+// Match window: bettingClosesAt = kickoff, resolvesAt = kickoff + 2h
+const ucl1Kickoff = atHour(4, 21) // ~Tue 21:00 (UCL slot)
+const plKickoff = atHour(9, 16, 30) // ~Sun 16:30 (PL slot)
+const clasicoKickoff = atHour(17, 21) // ~Mon 21:00 LaLiga
+
+// ─── Crypto candles ───────────────────────────────────────────
+// BTC weekend: bettingClosesAt = 2 days before Sunday 00:00 = Fri 00:00
+const btcResolvesAt = nextWeekday(0) // next Sun 00:00
+const btcBettingClosesAt = btcResolvesAt - 2 * DAY
+
+// ETH daily: closes 22:00 today, resolves tomorrow 00:00
+const ethResolvesAt = midnight(1)
+const ethBettingClosesAt = ethResolvesAt - 2 * HOUR
+
+// SOL daily: spaced one day after ETH so the dashboard shows a longer
+// countdown alongside the short one.
+const solResolvesAt = midnight(2)
+const solBettingClosesAt = solResolvesAt - 2 * HOUR
+
+// ─── News events ──────────────────────────────────────────────
+const starshipStart = atHour(4, 14) // Tue 14:00 — typical Starship window
+const starshipEnd = starshipStart + 3 * HOUR
+const fomcAnnounce = atHour(13, 18) // ~next Wed 18:00 UTC FOMC slot
+const fomcResolved = fomcAnnounce + 30 * 60_000 // +30min for statement read
+const wwdcKeynote = atHour(45, 17) // ~Mon Jun 8, 17:00 UTC
+const wwdcEnd = wwdcKeynote + 2 * HOUR
+
 export const initialMarkets: Market[] = [
   // ─── Football ──────────────────────────────────────────────
   {
@@ -20,11 +86,12 @@ export const initialMarkets: Market[] = [
     options: ['Real Madrid', 'Draw', 'Arsenal'],
     optionPools: [220, 80, 160],
     totalPool: 460,
-    state: 'open',
+    state: initialState(ucl1Kickoff, ucl1Kickoff + 2 * HOUR),
     winningOption: null,
     category: 'football',
     mockWinner: 0,
-    closesAt: closeIn(3 * MIN),
+    bettingClosesAt: ucl1Kickoff,
+    resolvesAt: ucl1Kickoff + 2 * HOUR,
     meta: {
       kind: 'football',
       teams: ['Real Madrid', 'Arsenal'],
@@ -34,16 +101,17 @@ export const initialMarkets: Market[] = [
   },
   {
     id: 'mci-liv-epl-decider-2026',
-    question: 'Man City vs Liverpool — PL 2025/26 title decider?',
+    question: 'Man City vs Liverpool — PL 2025/26 decider?',
     resolutionUrl: 'https://www.bbc.com/sport/football/premier-league',
     options: ['Man City', 'Draw', 'Liverpool'],
     optionPools: [120, 60, 180],
     totalPool: 360,
-    state: 'open',
+    state: initialState(plKickoff, plKickoff + 2 * HOUR),
     winningOption: null,
     category: 'football',
     mockWinner: 2,
-    closesAt: closeIn(12 * MIN),
+    bettingClosesAt: plKickoff,
+    resolvesAt: plKickoff + 2 * HOUR,
     meta: {
       kind: 'football',
       teams: ['Man City', 'Liverpool'],
@@ -52,17 +120,18 @@ export const initialMarkets: Market[] = [
     },
   },
   {
-    id: 'rm-barca-clasico-20260511',
+    id: 'rm-barca-clasico-202605',
     question: 'Real Madrid vs Barcelona — La Liga El Clásico 11/05/2026?',
     resolutionUrl: 'https://www.bbc.com/sport/football/scores-fixtures',
     options: ['Real Madrid', 'Draw', 'Barcelona'],
     optionPools: [240, 70, 250],
     totalPool: 560,
-    state: 'open',
+    state: initialState(clasicoKickoff, clasicoKickoff + 2 * HOUR),
     winningOption: null,
     category: 'football',
     mockWinner: 2,
-    closesAt: closeIn(25 * MIN),
+    bettingClosesAt: clasicoKickoff,
+    resolvesAt: clasicoKickoff + 2 * HOUR,
     meta: {
       kind: 'football',
       teams: ['Real Madrid', 'Barcelona'],
@@ -73,17 +142,18 @@ export const initialMarkets: Market[] = [
 
   // ─── Crypto ────────────────────────────────────────────────
   {
-    id: 'btc-150k-q2-2026',
-    question: 'BTC closes above $150,000 on 30/06/2026?',
+    id: 'btc-weekend-up',
+    question: 'BTC closes higher than Friday open this Sunday 00:00?',
     resolutionUrl: 'https://www.coingecko.com/en/coins/bitcoin',
-    options: ['Yes', 'No'],
+    options: ['Up', 'Down'],
     optionPools: [130, 80],
     totalPool: 210,
-    state: 'open',
+    state: initialState(btcBettingClosesAt, btcResolvesAt),
     winningOption: null,
     category: 'crypto',
     mockWinner: 0,
-    closesAt: closeIn(5 * MIN),
+    bettingClosesAt: btcBettingClosesAt,
+    resolvesAt: btcResolvesAt,
     meta: {
       kind: 'crypto',
       symbol: '₿',
@@ -93,17 +163,18 @@ export const initialMarkets: Market[] = [
     },
   },
   {
-    id: 'eth-7k-q2-2026',
-    question: 'ETH closes Q2 2026 above $7,000?',
+    id: 'eth-daily-up',
+    question: 'ETH 24h candle closes green at 00:00 tonight?',
     resolutionUrl: 'https://www.coingecko.com/en/coins/ethereum',
-    options: ['Yes', 'No'],
+    options: ['Green', 'Red'],
     optionPools: [170, 110],
     totalPool: 280,
-    state: 'open',
+    state: initialState(ethBettingClosesAt, ethResolvesAt),
     winningOption: null,
     category: 'crypto',
     mockWinner: 0,
-    closesAt: closeIn(20 * MIN),
+    bettingClosesAt: ethBettingClosesAt,
+    resolvesAt: ethResolvesAt,
     meta: {
       kind: 'crypto',
       symbol: 'Ξ',
@@ -113,17 +184,18 @@ export const initialMarkets: Market[] = [
     },
   },
   {
-    id: 'sol-new-ath-may-2026',
-    question: 'SOL prints a new all-time high in May 2026?',
+    id: 'sol-daily-up',
+    question: 'SOL 24h candle closes green at 00:00 tomorrow?',
     resolutionUrl: 'https://www.coingecko.com/en/coins/solana',
-    options: ['Yes', 'No'],
+    options: ['Green', 'Red'],
     optionPools: [85, 130],
     totalPool: 215,
-    state: 'open',
+    state: initialState(solBettingClosesAt, solResolvesAt),
     winningOption: null,
     category: 'crypto',
     mockWinner: 1,
-    closesAt: closeIn(45 * MIN),
+    bettingClosesAt: solBettingClosesAt,
+    resolvesAt: solResolvesAt,
     meta: {
       kind: 'crypto',
       symbol: '◎',
@@ -141,16 +213,37 @@ export const initialMarkets: Market[] = [
     options: ['Yes', 'No'],
     optionPools: [95, 115],
     totalPool: 210,
-    state: 'open',
+    state: initialState(starshipStart, starshipEnd),
     winningOption: null,
     category: 'news',
     mockWinner: 0,
-    closesAt: closeIn(7 * MIN),
+    bettingClosesAt: starshipStart,
+    resolvesAt: starshipEnd,
     meta: {
       kind: 'news',
       flag: 'USA',
       subject: 'Starship Orbit',
       color: '#a855f7',
+    },
+  },
+  {
+    id: 'fomc-may-2026-rate-cut',
+    question: 'Fed cuts rates at May 2026 FOMC meeting?',
+    resolutionUrl: 'https://www.federalreserve.gov/newsevents.htm',
+    options: ['Cut', 'Hold'],
+    optionPools: [80, 140],
+    totalPool: 220,
+    state: initialState(fomcAnnounce, fomcResolved),
+    winningOption: null,
+    category: 'news',
+    mockWinner: 1,
+    bettingClosesAt: fomcAnnounce,
+    resolvesAt: fomcResolved,
+    meta: {
+      kind: 'news',
+      flag: 'USA',
+      subject: 'FOMC May 2026',
+      color: '#ff5566',
     },
   },
   {
@@ -160,35 +253,17 @@ export const initialMarkets: Market[] = [
     options: ['Yes', 'No'],
     optionPools: [165, 105],
     totalPool: 270,
-    state: 'open',
+    state: initialState(wwdcKeynote, wwdcEnd),
     winningOption: null,
     category: 'news',
     mockWinner: 0,
-    closesAt: closeIn(30 * MIN),
+    bettingClosesAt: wwdcKeynote,
+    resolvesAt: wwdcEnd,
     meta: {
       kind: 'news',
       flag: 'USA',
       subject: 'WWDC 2026',
       color: '#3b82f6',
-    },
-  },
-  {
-    id: 'fed-rate-cut-may-2026',
-    question: 'Fed cuts rates at May 2026 FOMC meeting?',
-    resolutionUrl: 'https://www.federalreserve.gov/newsevents.htm',
-    options: ['Yes', 'No'],
-    optionPools: [80, 140],
-    totalPool: 220,
-    state: 'open',
-    winningOption: null,
-    category: 'news',
-    mockWinner: 1,
-    closesAt: closeIn(60 * MIN),
-    meta: {
-      kind: 'news',
-      flag: 'USA',
-      subject: 'Fed FOMC',
-      color: '#ff5566',
     },
   },
 ]

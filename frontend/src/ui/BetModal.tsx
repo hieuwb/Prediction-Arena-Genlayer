@@ -212,6 +212,19 @@ function BetModalInner({
         </>
       )}
 
+      {market.state === 'awaiting' && (
+        <div className="rounded-lg bg-purple-500/10 border border-purple-500/30 p-3 text-center">
+          <div className="text-xs text-purple-200 font-medium mb-1">
+            Betting closed — waiting for the event to conclude
+          </div>
+          <div className="text-[11px] text-white/50">
+            Validators will read{' '}
+            <span className="text-purple-300">{tryHostname(market.resolutionUrl)}</span>{' '}
+            once the result is final.
+          </div>
+        </div>
+      )}
+
       {market.state === 'pending' && (
         <div className="text-center py-4">
           <div className="inline-flex items-center gap-2 text-sm text-white/70">
@@ -269,7 +282,9 @@ function tryHostname(url: string): string {
 }
 
 function ModalCountdown({ market }: { market: Market }) {
-  const remaining = useCountdown(market.closesAt)
+  const target =
+    market.state === 'awaiting' ? market.resolvesAt : market.bettingClosesAt
+  const remaining = useCountdown(target)
   if (market.state === 'resolved') {
     return (
       <div className="flex items-center gap-2 text-[11px] font-mono text-arena-gold mb-3">
@@ -287,20 +302,28 @@ function ModalCountdown({ market }: { market: Market }) {
     )
   }
   const urgent = remaining > 0 && remaining < 60_000
+  const phase = market.state === 'awaiting' ? 'Result in' : 'Bets close in'
+  const tone =
+    market.state === 'awaiting'
+      ? 'text-purple-300'
+      : urgent
+        ? 'text-arena-rose'
+        : 'text-white/55'
   return (
     <div
-      className={clsx(
-        'flex items-center gap-2 text-[11px] font-mono mb-3',
-        urgent ? 'text-arena-rose' : 'text-white/55',
-      )}
+      className={clsx('flex items-center gap-2 text-[11px] font-mono mb-3', tone)}
     >
       <span
         className={clsx(
           'w-1.5 h-1.5 rounded-full',
-          urgent ? 'bg-arena-rose animate-pulse' : 'bg-white/40',
+          market.state === 'awaiting'
+            ? 'bg-purple-300 animate-pulse'
+            : urgent
+              ? 'bg-arena-rose animate-pulse'
+              : 'bg-white/40',
         )}
       />
-      Closes in {remaining > 0 ? formatCountdown(remaining) : '0:00'}
+      {phase} {remaining > 0 ? formatCountdown(remaining) : '0:00'}
     </div>
   )
 }

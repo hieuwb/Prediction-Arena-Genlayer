@@ -4,8 +4,14 @@ import { useMarketStore } from '../store/markets'
 import type { Market, MarketCategory, View } from '../types'
 import { useCountdown, formatCountdown } from '../lib/countdown'
 
-function CountdownPill({ closesAt }: { closesAt: number }) {
-  const remaining = useCountdown(closesAt)
+function CountdownPill({
+  target,
+  prefix,
+}: {
+  target: number
+  prefix: string
+}) {
+  const remaining = useCountdown(target)
   const urgent = remaining > 0 && remaining < 60_000
   return (
     <div
@@ -20,7 +26,7 @@ function CountdownPill({ closesAt }: { closesAt: number }) {
           urgent ? 'bg-arena-rose animate-pulse' : 'bg-white/40',
         )}
       />
-      {remaining > 0 ? formatCountdown(remaining) : 'closing…'}
+      {remaining > 0 ? `${prefix} ${formatCountdown(remaining)}` : 'closing…'}
     </div>
   )
 }
@@ -29,6 +35,10 @@ const STATE_BADGE: Record<Market['state'], { label: string; cls: string }> = {
   open: {
     label: 'Open',
     cls: 'bg-arena-cyan/20 text-arena-cyan border-arena-cyan/40',
+  },
+  awaiting: {
+    label: 'Awaiting',
+    cls: 'bg-purple-500/20 text-purple-300 border-purple-500/40',
   },
   pending: {
     label: 'Resolving…',
@@ -169,7 +179,10 @@ export function MarketList() {
                     </div>
                   )}
                   {m.state === 'open' && (
-                    <CountdownPill closesAt={m.closesAt} />
+                    <CountdownPill target={m.bettingClosesAt} prefix="closes" />
+                  )}
+                  {m.state === 'awaiting' && (
+                    <CountdownPill target={m.resolvesAt} prefix="result" />
                   )}
                 </div>
               </button>

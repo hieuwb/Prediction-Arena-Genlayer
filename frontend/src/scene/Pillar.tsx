@@ -16,12 +16,14 @@ import { useCountdown, formatCountdown } from '../lib/countdown'
 
 const COLORS: Record<Market['state'], string> = {
   open: '#3aa9ff',
+  awaiting: '#a374ff',
   pending: '#ffffff',
   resolved: '#ffb627',
 }
 
 const ACCENT: Record<Market['state'], string> = {
   open: '#1f7fd4',
+  awaiting: '#7e4dd6',
   pending: '#cfd2d8',
   resolved: '#e07b00',
 }
@@ -52,7 +54,11 @@ export function Pillar({ market, position = [0, 0, 0], tintOpen }: Props) {
   const pulseTRef = useRef(0)
 
   const select = useMarketStore((s) => s.select)
-  const remaining = useCountdown(market.closesAt)
+  // Phase the countdown by state: open targets bettingClosesAt, awaiting
+  // targets resolvesAt. After resolve, the countdown stops mattering.
+  const targetTs =
+    market.state === 'awaiting' ? market.resolvesAt : market.bettingClosesAt
+  const remaining = useCountdown(targetTs)
   const countdownLabel = formatCountdown(remaining)
 
   const targetHeight = heightFromPool(market.totalPool)
@@ -308,7 +314,9 @@ export function Pillar({ market, position = [0, 0, 0], tintOpen }: Props) {
             ? `→ ${market.options[market.winningOption]}`
             : market.state === 'pending'
               ? 'resolving…'
-              : `closes in ${countdownLabel}`}
+              : market.state === 'awaiting'
+                ? `result in ${countdownLabel}`
+                : `bets close in ${countdownLabel}`}
         </Text>
       </Billboard>
     </group>

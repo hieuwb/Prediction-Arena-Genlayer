@@ -1,4 +1,10 @@
-export type MarketState = 'open' | 'pending' | 'resolved'
+// open      → bets accepted; countdown ticks toward bettingClosesAt
+// awaiting  → betting closed; the underlying event is still in progress
+//             (match playing, candle still printing, vote still open).
+//             Countdown ticks toward resolvesAt.
+// pending   → resolvesAt has passed; validators are reading the web
+// resolved  → consensus reached; winner stored, claim available
+export type MarketState = 'open' | 'awaiting' | 'pending' | 'resolved'
 
 export type MarketCategory = 'football' | 'crypto' | 'news'
 
@@ -50,8 +56,12 @@ export type Market = {
   category: MarketCategory
   // demo-only: which option the mock resolver should pick
   mockWinner: number
-  /** Unix ms — when betting closes and the market auto-resolves */
-  closesAt: number
+  /** Unix ms — bet input is disabled at this point (e.g. kickoff, daily
+   *  candle close). Market transitions open → awaiting. */
+  bettingClosesAt: number
+  /** Unix ms — validators run and the result is announced. Market
+   *  transitions awaiting → pending → resolved. Always >= bettingClosesAt. */
+  resolvesAt: number
   /** Display metadata used to render the logo screen above the pillar */
   meta?: MarketMeta
 }

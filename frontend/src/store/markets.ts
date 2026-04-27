@@ -280,7 +280,9 @@ export const useMarketStore = create<State>()(
       resolveMarket: async (marketId) => {
         const market = get().markets.find((m) => m.id === marketId)
         if (!market) return
-        if (market.state !== 'open') {
+        // Auto-trigger fires from 'awaiting' (event ended). Manual override
+        // could fire from 'open' too. 'pending'/'resolved' are no-ops.
+        if (market.state !== 'open' && market.state !== 'awaiting') {
           get().pushToast('info', 'Already resolved or pending')
           return
         }
@@ -373,20 +375,33 @@ export const useMarketStore = create<State>()(
 
       tickExpiredMarkets: () => {
         const now = Date.now()
-        const expired = get().markets.filter(
-          (m) => m.state === 'open' && m.closesAt <= now,
-        )
-        for (const m of expired) {
-          // Fire-and-forget — resolveMarket flips state to 'pending'
-          // immediately so this same market won't be picked up again
-          // on the next tick.
-          void get().resolveMarket(m.id)
+        // Two transitions on every tick:
+        //   open → awaiting   when bettingClosesAt has passed (kickoff,
+        //                     candle close). Pure local state flip, no
+        //                     wallet interaction.
+        //   awaiting → resolve  when resolvesAt has passed. Calls
+        //                       resolveMarket which flips to 'pending'
+        //                       immediately so we don't re-fire next tick.
+        const closing: string[] = []
+        const resolving: string[] = []
+        for (const m of get().markets) {
+          if (m.state === 'open' && m.bettingClosesAt <= now) closing.push(m.id)
+          else if (m.state === 'awaiting' && m.resolvesAt <= now)
+            resolving.push(m.id)
         }
+        if (closing.length > 0) {
+          set((s) => ({
+            markets: s.markets.map((m) =>
+              closing.includes(m.id) ? { ...m, state: 'awaiting' as const } : m,
+            ),
+          }))
+        }
+        for (const id of resolving) void get().resolveMarket(id)
       },
     }),
     {
       name: 'arena-store',
-      version: 4,
+      version: 5,
       // Persist user-owned state + scene state. Skip transient bits
       // (toasts, selected modal) so reload doesn't restore a half-open
       // bet flow.
