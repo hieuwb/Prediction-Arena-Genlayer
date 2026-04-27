@@ -258,6 +258,11 @@ function BetModalInner({
 
       {market.state === 'resolved' && (
         <div className="rounded-lg bg-white/5 border border-white/10 p-3">
+          {market.reasoning && (
+            <div className="text-[11px] text-arena-cyan/85 italic border-l-2 border-arena-cyan/40 pl-2 mb-3">
+              ⟁ Validators: {market.reasoning}
+            </div>
+          )}
           <div className="text-xs text-white/50 mb-1">Your winning stake</div>
           <div className="flex items-baseline justify-between mb-3">
             <div className="text-sm font-mono">{myStakeOnWinner} PARENA</div>

@@ -11,27 +11,6 @@ import {
 } from '../lib/sound'
 import * as gl from '../lib/genlayer'
 
-// Fire-and-forget on-chain mirror. Multi-market design: every bet/resolve
-// hits the deployed contract for its market_id. Skipped only when the
-// frontend isn't connected to a contract (mock-only mode) or the user
-// hasn't connected a wallet yet — the local UI flow stays responsive
-// either way and the toast surfaces the chain result asynchronously.
-function mirrorOnChain(
-  label: string,
-  fn: () => Promise<`0x${string}`>,
-  pushToast: (kind: ToastKind, message: string) => void,
-) {
-  if (!gl.isEnabled() || !gl.getUserAddress()) return
-  fn()
-    .then((hash) => {
-      pushToast('success', `${label} on-chain: ${hash.slice(0, 10)}…`)
-    })
-    .catch((err: unknown) => {
-      const msg = err instanceof Error ? err.message : String(err)
-      pushToast('error', `${label} chain call failed: ${msg.slice(0, 80)}`)
-    })
-}
-
 type State = {
   markets: Market[]
   selectedMarketId: string | null
@@ -54,6 +33,7 @@ type State = {
   claimFaucet: () => Promise<void>
   seedOnChain: () => Promise<void>
   refreshChainBalance: () => Promise<void>
+  syncMarketFromChain: (marketId: string) => Promise<void>
   tickExpiredMarkets: () => void
   placeBet: (marketId: string, optionIdx: number, amount: number) => Promise<void>
   resolveMarket: (marketId: string) => Promise<void>
@@ -276,8 +256,11 @@ export const useMarketStore = create<State>()(
               'success',
               `Bet confirmed: ${hash.slice(0, 10)}… (${amount} on "${market.options[optionIdx]}")`,
             )
-            // Refresh chain balance — gas + value just spent.
+            // Refresh chain balance — gas + value just spent. Then pull
+            // the on-chain pool snapshot for this market so the UI
+            // shows the real pools (not just our local +amount diff).
             void get().refreshChainBalance()
+            void get().syncMarketFromChain(marketId)
           } catch (err) {
             const msg = err instanceof Error ? err.message : String(err)
             pushToast('error', `Bet rejected: ${msg.slice(0, 100)}`)
@@ -326,6 +309,9 @@ export const useMarketStore = create<State>()(
 
         await new Promise((r) => setTimeout(r, 2200))
 
+        // Show mockWinner immediately for UX while validators read the
+        // web. The real on-chain winner overrides this when
+        // syncMarketFromChain returns below.
         set((s) => ({
           markets: s.markets.map((m) =>
             m.id !== marketId
@@ -334,8 +320,39 @@ export const useMarketStore = create<State>()(
           ),
         }))
         sfxChime(get().soundMuted)
-        get().pushToast('success', `Resolved → "${market.options[market.mockWinner]}"`)
-        mirrorOnChain('Resolve', () => gl.resolve(marketId), get().pushToast)
+        get().pushToast(
+          'success',
+          `Resolved → "${market.options[market.mockWinner]}" (provisional)`,
+        )
+
+        // Fire on-chain resolve. Wait for the receipt, then read the
+        // contract's actual winner + reasoning and overwrite the
+        // provisional state. If the validators returned -1 (couldn't
+        // determine), keep the mock fallback so the UI still has a
+        // result to display.
+        if (gl.isEnabled() && gl.getUserAddress()) {
+          try {
+            const hash = await gl.resolve(marketId)
+            get().pushToast(
+              'success',
+              `Validators ran on-chain: ${hash.slice(0, 10)}…`,
+            )
+            await get().syncMarketFromChain(marketId)
+            const after = get().markets.find((m) => m.id === marketId)
+            if (after?.reasoning) {
+              get().pushToast(
+                'info',
+                `AI: ${after.reasoning.slice(0, 80)}`,
+              )
+            }
+          } catch (err) {
+            const msg = err instanceof Error ? err.message : String(err)
+            get().pushToast(
+              'error',
+              `On-chain resolve failed: ${msg.slice(0, 80)} (UI shows fallback)`,
+            )
+          }
+        }
       },
 
       claim: async (marketId) => {
@@ -400,6 +417,34 @@ export const useMarketStore = create<State>()(
           set({ chainBalance: wei })
         } catch {
           // Silent — RPC may be flaky, leave the previous value.
+        }
+      },
+
+      syncMarketFromChain: async (marketId) => {
+        if (!gl.isEnabled() || !gl.getUserAddress()) return
+        try {
+          const data = await gl.getMarket(marketId)
+          if (!data) return
+          set((s) => ({
+            markets: s.markets.map((m) =>
+              m.id !== marketId
+                ? m
+                : {
+                    ...m,
+                    optionPools: data.option_pools.map((n) => Number(n)),
+                    totalPool: Number(data.total_pool),
+                    ...(data.has_resolved
+                      ? {
+                          state: 'resolved' as const,
+                          winningOption: Number(data.winner),
+                          reasoning: data.reasoning || undefined,
+                        }
+                      : {}),
+                  },
+            ),
+          }))
+        } catch {
+          // Silent — frontend keeps showing local state on RPC hiccup.
         }
       },
 

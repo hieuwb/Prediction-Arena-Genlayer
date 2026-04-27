@@ -80,7 +80,8 @@ export const initialMarkets: Market[] = [
   {
     id: 'rm-arsenal-ucl-sf-2026',
     question: 'Real Madrid vs Arsenal — UCL semi-final 2026, who advances?',
-    resolutionUrl: 'https://www.bbc.com/sport/football/champions-league',
+    resolutionUrl:
+      'https://en.wikipedia.org/wiki/2025%E2%80%9326_UEFA_Champions_League_knockout_phase',
     options: ['Real Madrid', 'Draw', 'Arsenal'],
     optionPools: [220, 80, 160],
     totalPool: 460,
@@ -100,7 +101,7 @@ export const initialMarkets: Market[] = [
   {
     id: 'mci-liv-epl-decider-2026',
     question: 'Man City vs Liverpool — PL 2025/26 decider?',
-    resolutionUrl: 'https://www.bbc.com/sport/football/premier-league',
+    resolutionUrl: 'https://en.wikipedia.org/wiki/2025%E2%80%9326_Premier_League',
     options: ['Man City', 'Draw', 'Liverpool'],
     optionPools: [120, 60, 180],
     totalPool: 360,
@@ -120,7 +121,7 @@ export const initialMarkets: Market[] = [
   {
     id: 'rm-barca-clasico-202605',
     question: 'Real Madrid vs Barcelona — La Liga El Clásico 11/05/2026?',
-    resolutionUrl: 'https://www.bbc.com/sport/football/scores-fixtures',
+    resolutionUrl: 'https://en.wikipedia.org/wiki/2025%E2%80%9326_La_Liga',
     options: ['Real Madrid', 'Draw', 'Barcelona'],
     optionPools: [240, 70, 250],
     totalPool: 560,
@@ -207,7 +208,8 @@ export const initialMarkets: Market[] = [
   {
     id: 'starship-orbit-may-2026',
     question: 'SpaceX Starship reaches stable orbit on next test (May 2026)?',
-    resolutionUrl: 'https://www.bbc.com/news/science_and_environment',
+    resolutionUrl:
+      'https://en.wikipedia.org/wiki/List_of_Starship_launches',
     options: ['Yes', 'No'],
     optionPools: [95, 115],
     totalPool: 210,
@@ -227,7 +229,8 @@ export const initialMarkets: Market[] = [
   {
     id: 'fomc-may-2026-rate-cut',
     question: 'Fed cuts rates at May 2026 FOMC meeting?',
-    resolutionUrl: 'https://www.federalreserve.gov/newsevents.htm',
+    resolutionUrl:
+      'https://en.wikipedia.org/wiki/History_of_Federal_Open_Market_Committee_actions',
     options: ['Cut', 'Hold'],
     optionPools: [80, 140],
     totalPool: 220,
@@ -247,7 +250,7 @@ export const initialMarkets: Market[] = [
   {
     id: 'wwdc-2026-ai-hardware',
     question: 'Apple WWDC 2026 unveils dedicated AI hardware?',
-    resolutionUrl: 'https://www.apple.com/newsroom/',
+    resolutionUrl: 'https://en.wikipedia.org/wiki/Apple_Worldwide_Developers_Conference',
     options: ['Yes', 'No'],
     optionPools: [165, 105],
     totalPool: 270,

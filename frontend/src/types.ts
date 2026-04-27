@@ -62,6 +62,9 @@ export type Market = {
   /** Unix ms — validators run and the result is announced. Market
    *  transitions awaiting → pending → resolved. Always >= bettingClosesAt. */
   resolvesAt: number
+  /** Validator-returned reasoning sentence after on-chain resolve.
+   *  Set from get_market() once the contract has has_resolved=true. */
+  reasoning?: string
   /** Display metadata used to render the logo screen above the pillar */
   meta?: MarketMeta
 }
