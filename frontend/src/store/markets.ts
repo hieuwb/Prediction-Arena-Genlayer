@@ -81,11 +81,12 @@ export const useMarketStore = create<State>()(
         set({ connecting: true })
         try {
           const addr = await gl.connectMetaMask()
-          set({
-            userAddress: addr,
-            parenaBalance: 1000,
-            userBets: [],
-          })
+          // Don't wipe parenaBalance/userBets here — disconnect+reconnect
+          // is a routine UX step (network switch, wallet re-prompt). The
+          // user's earned PARENA (paid 1 GEN per faucet claim) and bet
+          // history must survive a session toggle. Initial 1000 PARENA
+          // is set once via the persisted store's initial state.
+          set({ userAddress: addr })
           sfxThunk(get().soundMuted)
           get().pushToast('success', `Connected ${addr.slice(0, 6)}…${addr.slice(-4)}`)
 
@@ -134,11 +135,12 @@ export const useMarketStore = create<State>()(
 
       disconnect: () => {
         gl.disconnect()
+        // Keep parenaBalance + userBets so reconnecting the same wallet
+        // restores the user's session state. Only chain-side data
+        // (address, chainBalance) clears.
         set({
           userAddress: null,
           chainBalance: null,
-          parenaBalance: 1000,
-          userBets: [],
         })
         sfxThunk(get().soundMuted)
         get().pushToast('info', 'Wallet disconnected')
