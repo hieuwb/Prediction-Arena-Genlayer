@@ -122,14 +122,18 @@ export const useMarketStore = create<State>()(
 
           // Mandatory on-chain init: every bet hits the contract per
           // market_id, so the contract must already know the markets.
-          // Probe list_markets() — if empty, seed; if already populated,
-          // skip silently. Probe failures (contract missing, network)
-          // surface as a toast but don't block UI.
+          // Compare list_markets() against the LOCAL mock IDs (not just
+          // "is non-empty") so when the demo bumps mock IDs, the new
+          // ones get seeded onto an already-populated contract. Older
+          // markets stay on chain but the frontend simply doesn't
+          // surface them — seed_markets is idempotent on existing ids.
           if (gl.isEnabled()) {
             try {
               const listing = await gl.listMarkets()
-              const seeded = (listing.market_ids ?? []).length > 0
-              if (!seeded) {
+              const onChainIds = new Set(listing.market_ids ?? [])
+              const localIds = get().markets.map((m) => m.id)
+              const missing = localIds.some((id) => !onChainIds.has(id))
+              if (missing) {
                 await get().seedOnChain()
               }
             } catch (err) {
@@ -382,7 +386,7 @@ export const useMarketStore = create<State>()(
     }),
     {
       name: 'arena-store',
-      version: 3,
+      version: 4,
       // Persist user-owned state + scene state. Skip transient bits
       // (toasts, selected modal) so reload doesn't restore a half-open
       // bet flow.
