@@ -210,8 +210,31 @@ export const useMarketStore = create<State>()(
           return
         }
 
-        pushToast('info', 'Confirming bet…')
-        await new Promise((r) => setTimeout(r, 800))
+        // On-chain mode: require the wallet signature + receipt BEFORE
+        // touching the local UI. If the user rejects in MetaMask or the
+        // tx reverts, no balance is deducted and no bet is recorded —
+        // the UI never lies about confirmation.
+        //
+        // Mock-only mode (no contract address): keep the snappy fake
+        // confirmation so demo reviewers can explore without a wallet.
+        if (gl.isEnabled()) {
+          pushToast('info', 'Sign in wallet to place bet…')
+          try {
+            const hash = await gl.placeBet(marketId, optionIdx, BigInt(amount))
+            pushToast(
+              'success',
+              `Bet confirmed: ${hash.slice(0, 10)}… (${amount} on "${market.options[optionIdx]}")`,
+            )
+          } catch (err) {
+            const msg = err instanceof Error ? err.message : String(err)
+            pushToast('error', `Bet rejected: ${msg.slice(0, 100)}`)
+            return
+          }
+        } else {
+          pushToast('info', 'Confirming bet (mock)…')
+          await new Promise((r) => setTimeout(r, 600))
+          pushToast('success', `Staked ${amount} on "${market.options[optionIdx]}"`)
+        }
 
         set((s) => ({
           parenaBalance: s.parenaBalance - amount,
@@ -229,12 +252,6 @@ export const useMarketStore = create<State>()(
           userBets: [...s.userBets, { marketId, optionIdx, amount }],
         }))
         sfxClink(get().soundMuted)
-        pushToast('success', `Staked ${amount} on "${market.options[optionIdx]}"`)
-        mirrorOnChain(
-          'Bet',
-          () => gl.placeBet(marketId, optionIdx, BigInt(amount)),
-          pushToast,
-        )
       },
 
       resolveMarket: async (marketId) => {

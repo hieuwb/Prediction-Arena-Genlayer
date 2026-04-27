@@ -62,7 +62,6 @@ export function MarketList() {
   const allMarkets = useMarketStore((s) => s.markets)
   const view = useMarketStore((s) => s.currentView)
   const select = useMarketStore((s) => s.select)
-  const resolveMarket = useMarketStore((s) => s.resolveMarket)
   const teleport = useMarketStore((s) => s.teleport)
 
   // Collapsed state lives in localStorage so the user's preference
@@ -174,20 +173,6 @@ export function MarketList() {
                   )}
                 </div>
               </button>
-              {m.state === 'open' && (
-                <div className="flex justify-end px-2.5 pb-2">
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      resolveMarket(m.id)
-                    }}
-                    className="text-[11px] px-2 py-0.5 rounded bg-arena-gold/15 border border-arena-gold/30 text-arena-gold hover:bg-arena-gold/25 focus:outline-none focus-visible:ring-2 focus-visible:ring-arena-gold/60"
-                  >
-                    Resolve
-                  </button>
-                </div>
-              )}
             </li>
           )
         })}

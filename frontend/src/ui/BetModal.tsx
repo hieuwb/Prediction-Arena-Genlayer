@@ -49,7 +49,6 @@ function BetModalInner({
   const userAddress = useMarketStore((s) => s.userAddress)
   const userBets = useMarketStore((s) => s.userBets)
   const placeBet = useMarketStore((s) => s.placeBet)
-  const resolveMarket = useMarketStore((s) => s.resolveMarket)
   const claim = useMarketStore((s) => s.claim)
 
   const [optionIdx, setOptionIdx] = useState(0)
@@ -207,14 +206,8 @@ function BetModalInner({
             {!userAddress
               ? 'Connect wallet to bet'
               : pending
-                ? 'Confirming…'
+                ? 'Sign in wallet…'
                 : `Place bet on "${market.options[optionIdx]}"`}
-          </button>
-          <button
-            onClick={() => resolveMarket(market.id)}
-            className="w-full mt-2 py-2 rounded-lg bg-white/5 border border-white/10 text-white/70 text-xs hover:bg-white/10"
-          >
-            Resolve now (simulate validators)
           </button>
         </>
       )}
